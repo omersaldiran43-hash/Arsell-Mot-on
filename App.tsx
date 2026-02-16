@@ -51,7 +51,7 @@ const Button = ({ children, variant = 'primary', className = '', onClick }: { ch
   const baseStyle = "px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 cursor-pointer select-none";
   const variants = {
     primary: "bg-[#ccff00] text-black hover:bg-[#b3e600] shadow-[0_0_20px_rgba(204,255,0,0.2)] hover:shadow-[0_0_30px_rgba(204,255,0,0.4)]",
-    secondary: "bg-white/10 text-white hover:bg-white/20 backdrop-blur-md",
+    secondary: "bg-white/5 text-white hover:bg-white/10 backdrop-blur-md border border-white/10",
     outline: "border border-white/20 text-white hover:border-[#ccff00] hover:text-[#ccff00]",
     google: "bg-white text-gray-800 hover:bg-gray-100 border border-gray-200"
   };
@@ -63,28 +63,43 @@ const Button = ({ children, variant = 'primary', className = '', onClick }: { ch
   );
 };
 
-// Simplified AdSense Container (Corner Lines Only - Large Banner Style)
-const AdSenseContainer = ({ className = "" }: { className?: string }) => {
+// --- NEW PROFESSIONAL BACKGROUND COMPONENT ---
+const BackgroundEffects = ({ variant = 'default' }: { variant?: 'default' | 'auth' | 'dashboard' }) => {
   return (
-    <div className={`w-full max-w-7xl mx-auto my-24 relative h-[280px] bg-[#080808] flex items-center justify-center ${className}`}>
-        {/* Top Left */}
-        <div className="absolute top-0 left-0 w-8 h-8 border-l-2 border-t-2 border-white/20"></div>
-        {/* Top Right */}
-        <div className="absolute top-0 right-0 w-8 h-8 border-r-2 border-t-2 border-white/20"></div>
-        {/* Bottom Left */}
-        <div className="absolute bottom-0 left-0 w-8 h-8 border-l-2 border-b-2 border-white/20"></div>
-        {/* Bottom Right */}
-        <div className="absolute bottom-0 right-0 w-8 h-8 border-r-2 border-b-2 border-white/20"></div>
-        
-        {/* Placeholder Content */}
-        <div className="flex flex-col items-center gap-4 opacity-30 select-none">
-           <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
-              <span className="text-2xl font-bold text-white">Ad</span>
-           </div>
-           <div className="text-gray-500 font-medium text-sm tracking-widest uppercase">
-              Reklam Alanı
-           </div>
-        </div>
+    <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+      {/* Base Dark Background */}
+      <div className="absolute inset-0 bg-[#020202]"></div>
+
+      {/* Grid Pattern */}
+      <div 
+        className="absolute inset-0 opacity-[0.15]" 
+        style={{
+          backgroundImage: `linear-gradient(to right, #333 1px, transparent 1px), linear-gradient(to bottom, #333 1px, transparent 1px)`,
+          backgroundSize: '40px 40px',
+          maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)'
+        }}
+      ></div>
+
+      {/* Ambient Glows based on variant */}
+      {variant === 'default' && (
+        <>
+          <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] bg-[#ccff00]/10 blur-[120px] rounded-full mix-blend-screen animate-pulse duration-[4000ms]"></div>
+          <div className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] bg-[#ccff00]/5 blur-[100px] rounded-full mix-blend-screen"></div>
+        </>
+      )}
+
+      {variant === 'auth' && (
+        <>
+           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-[#ccff00]/10 to-transparent blur-[60px] opacity-40"></div>
+           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
+        </>
+      )}
+
+      {variant === 'dashboard' && (
+        <>
+          <div className="absolute top-0 right-0 w-[800px] h-[600px] bg-gradient-to-b from-[#ccff00]/5 to-transparent blur-[100px] opacity-30"></div>
+        </>
+      )}
     </div>
   );
 };
@@ -96,16 +111,14 @@ const AuthScreen = ({ onLogin }: { onLogin: () => void }) => {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden p-4">
-      {/* Background Ambience */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#ccff00]/10 blur-[120px] rounded-full pointer-events-none"></div>
+      <BackgroundEffects variant="auth" />
 
       <div className="relative z-10 w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex justify-center mb-6">
             <Logo className="h-12" />
           </div>
-          <h2 className="text-3xl font-black text-white mb-2">
+          <h2 className="text-3xl font-black text-white mb-2 tracking-tight">
             {isLogin ? 'Tekrar Hoşgeldiniz' : 'Hesap Oluştur'}
           </h2>
           <p className="text-gray-400">
@@ -113,25 +126,27 @@ const AuthScreen = ({ onLogin }: { onLogin: () => void }) => {
           </p>
         </div>
 
-        <div className="bg-[#111] border border-white/10 rounded-3xl p-8 shadow-2xl space-y-6 relative overflow-hidden">
-           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#ccff00] to-transparent opacity-50"></div>
+        <div className="bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl space-y-6 relative overflow-hidden group">
+           {/* Card Highlight */}
+           <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+           <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#ccff00] to-transparent opacity-50"></div>
            
-           <div className="flex bg-black/50 p-1 rounded-xl mb-6 border border-white/5">
+           <div className="flex bg-black/40 p-1 rounded-xl mb-6 border border-white/5 relative z-10">
               <button 
                 onClick={() => setIsLogin(true)}
-                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${isLogin ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${isLogin ? 'bg-[#1a1a1a] text-white shadow-lg ring-1 ring-white/10' : 'text-gray-500 hover:text-white'}`}
               >
                 Giriş Yap
               </button>
               <button 
                 onClick={() => setIsLogin(false)}
-                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${!isLogin ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${!isLogin ? 'bg-[#1a1a1a] text-white shadow-lg ring-1 ring-white/10' : 'text-gray-500 hover:text-white'}`}
               >
                 Kayıt Ol
               </button>
            </div>
 
-           <Button variant="google" className="w-full relative group" onClick={onLogin}>
+           <Button variant="google" className="w-full relative group hover:bg-gray-50 transition-colors" onClick={onLogin}>
              <svg className="w-5 h-5 absolute left-6 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -147,7 +162,7 @@ const AuthScreen = ({ onLogin }: { onLogin: () => void }) => {
               <div className="flex-grow border-t border-white/10"></div>
            </div>
 
-           <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onLogin(); }}>
+           <form className="space-y-4 relative z-10" onSubmit={(e) => { e.preventDefault(); onLogin(); }}>
               <AnimatePresence mode="popLayout">
                 {!isLogin && (
                   <motion.div 
@@ -157,31 +172,31 @@ const AuthScreen = ({ onLogin }: { onLogin: () => void }) => {
                     className="grid grid-cols-2 gap-4 overflow-hidden"
                   >
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-500 mb-1 ml-1 uppercase">AD</label>
+                      <label className="block text-[10px] font-bold text-gray-500 mb-1 ml-1 uppercase tracking-wider">AD</label>
                       <div className="relative">
                         <User size={16} className="absolute left-4 top-3.5 text-gray-500" />
-                        <input type="text" placeholder="Ahmet" className="w-full bg-[#050505] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-[#ccff00] transition-colors" />
+                        <input type="text" placeholder="Ahmet" className="w-full bg-black/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/50 transition-all placeholder:text-gray-700" />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-gray-500 mb-1 ml-1 uppercase">SOYAD</label>
-                      <input type="text" placeholder="Yılmaz" className="w-full bg-[#050505] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#ccff00] transition-colors" />
+                      <label className="block text-[10px] font-bold text-gray-500 mb-1 ml-1 uppercase tracking-wider">SOYAD</label>
+                      <input type="text" placeholder="Yılmaz" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/50 transition-all placeholder:text-gray-700" />
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 mb-1 ml-1 uppercase">E-POSTA ADRESİ</label>
+                <label className="block text-[10px] font-bold text-gray-500 mb-1 ml-1 uppercase tracking-wider">E-POSTA ADRESİ</label>
                 <div className="relative">
                   <Mail size={16} className="absolute left-4 top-3.5 text-gray-500" />
-                  <input type="email" placeholder="ornek@arsell.com" className="w-full bg-[#050505] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-[#ccff00] transition-colors" />
+                  <input type="email" placeholder="ornek@arsell.com" className="w-full bg-black/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/50 transition-all placeholder:text-gray-700" />
                 </div>
               </div>
               
               <div>
-                <label className="block text-[10px] font-bold text-gray-500 mb-1 ml-1 uppercase">ŞİFRE</label>
-                <input type="password" placeholder="••••••••" className="w-full bg-[#050505] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#ccff00] transition-colors" />
+                <label className="block text-[10px] font-bold text-gray-500 mb-1 ml-1 uppercase tracking-wider">ŞİFRE</label>
+                <input type="password" placeholder="••••••••" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/50 transition-all placeholder:text-gray-700" />
               </div>
 
               <Button className="w-full mt-2">{isLogin ? 'Giriş Yap' : 'Kayıt Ol'}</Button>
@@ -275,16 +290,17 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   };
 
   const pricingOptions = [
-      { name: "Küçük Paket", amount: 100, price: "99 TL", color: "bg-[#111]" },
-      { name: "Orta Paket", amount: 500, price: "399 TL", color: "bg-[#111] border-[#ccff00]" },
-      { name: "Pro Paket", amount: 1500, price: "999 TL", color: "bg-[#111]" },
+      { name: "Küçük Paket", amount: 100, price: "99 TL", color: "bg-[#0f0f0f]" },
+      { name: "Orta Paket", amount: 500, price: "399 TL", color: "bg-[#0f0f0f] border-[#ccff00]" },
+      { name: "Pro Paket", amount: 1500, price: "999 TL", color: "bg-[#0f0f0f]" },
   ];
 
   return (
-    <div className="flex h-screen bg-[#000000] text-white overflow-hidden font-sans selection:bg-[#ccff00] selection:text-black">
+    <div className="flex h-screen bg-black text-white overflow-hidden font-sans selection:bg-[#ccff00] selection:text-black">
+      <BackgroundEffects variant="dashboard" />
       
-      {/* Left Sidebar */}
-      <div className="w-20 lg:w-64 bg-[#050505] border-r border-white/5 flex flex-col flex-shrink-0 z-30 transition-all duration-300">
+      {/* Left Sidebar - Glass Effect */}
+      <div className="w-20 lg:w-64 bg-[#050505]/90 backdrop-blur-xl border-r border-white/5 flex flex-col flex-shrink-0 z-30 transition-all duration-300">
          <div className="h-20 flex items-center px-6 border-b border-white/5">
             <Logo className="h-6" />
          </div>
@@ -299,7 +315,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
             </button>
             <button 
                 onClick={() => setActiveTab('settings')}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${activeTab === 'settings' ? 'bg-[#111] text-white border border-white/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${activeTab === 'settings' ? 'bg-[#1a1a1a] text-white border border-white/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
             >
                <Settings size={18} /> <span className="hidden lg:inline">Ayarlar</span>
             </button>
@@ -342,10 +358,10 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#000] relative overflow-y-auto custom-scrollbar">
+      <div className="flex-1 flex flex-col min-w-0 bg-transparent relative overflow-y-auto custom-scrollbar z-20">
          
          {/* Top Header */}
-         <div className="sticky top-0 z-20 bg-black/80 backdrop-blur-md border-b border-white/5 px-8 pt-6 pb-0">
+         <div className="sticky top-0 z-20 bg-black/70 backdrop-blur-xl border-b border-white/5 px-8 pt-6 pb-0">
              <div className="flex items-center gap-8 text-sm font-medium text-gray-500">
                 <div className={`pb-4 cursor-pointer hover:text-white transition-colors ${activeTab === 'generate' ? 'text-white border-b-2 border-[#ccff00] relative text-lg font-bold' : ''}`} onClick={() => setActiveTab('generate')}>
                    Motion Control
@@ -367,7 +383,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
             {activeTab === 'generate' && (
               <div className="max-w-5xl mx-auto w-full space-y-6 animate-in fade-in duration-500">
                  {/* Banner */}
-                 <div className="relative w-full h-48 rounded-2xl overflow-hidden group border border-white/10">
+                 <div className="relative w-full h-48 rounded-2xl overflow-hidden group border border-white/10 shadow-2xl">
                     <img src="https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=1200&auto=format&fit=crop" className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" alt="Banner" />
                     <div className="absolute inset-0 bg-gradient-to-r from-black via-black/50 to-transparent"></div>
                     <div className="absolute bottom-0 left-0 p-8">
@@ -381,14 +397,14 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
 
                  {/* Upload Grid */}
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-[#111] border border-white/10 rounded-2xl p-1 relative group hover:border-[#ccff00]/30 transition-colors h-[300px] flex flex-col">
+                    <div className="bg-[#0f0f0f]/80 backdrop-blur-sm border border-white/10 rounded-2xl p-1 relative group hover:border-[#ccff00]/30 transition-colors h-[300px] flex flex-col shadow-lg">
                        <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'video')} className="absolute inset-0 opacity-0 z-10 cursor-pointer" />
-                       <div className="flex-1 bg-[#0a0a0a] rounded-xl flex flex-col items-center justify-center text-center p-6 border border-dashed border-white/10 group-hover:border-[#ccff00]/20 transition-colors overflow-hidden relative">
+                       <div className="flex-1 bg-[#0a0a0a]/50 rounded-xl flex flex-col items-center justify-center text-center p-6 border border-dashed border-white/10 group-hover:border-[#ccff00]/20 transition-colors overflow-hidden relative">
                           {uploadedVideo ? (
                              <video src={uploadedVideo} className="w-full h-full object-cover rounded-lg" autoPlay muted loop />
                           ) : (
                              <>
-                                <div className="w-12 h-12 bg-[#1a1a1a] rounded-full flex items-center justify-center mb-4 text-[#ccff00] shadow-lg shadow-[#ccff00]/5">
+                                <div className="w-12 h-12 bg-[#1a1a1a] rounded-full flex items-center justify-center mb-4 text-[#ccff00] shadow-lg shadow-[#ccff00]/5 group-hover:scale-110 transition-transform">
                                    <Video size={24} />
                                 </div>
                                 <h3 className="text-white font-bold mb-2">Referans Video Ekle</h3>
@@ -399,14 +415,14 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                        {uploadedVideo && <div className="absolute top-4 right-4 z-20 bg-black/50 p-1 rounded-full"><Check size={14} className="text-[#ccff00]"/></div>}
                     </div>
 
-                    <div className="bg-[#111] border border-white/10 rounded-2xl p-1 relative group hover:border-[#ccff00]/30 transition-colors h-[300px] flex flex-col">
+                    <div className="bg-[#0f0f0f]/80 backdrop-blur-sm border border-white/10 rounded-2xl p-1 relative group hover:border-[#ccff00]/30 transition-colors h-[300px] flex flex-col shadow-lg">
                        <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'image')} className="absolute inset-0 opacity-0 z-10 cursor-pointer" />
-                       <div className="flex-1 bg-[#0a0a0a] rounded-xl flex flex-col items-center justify-center text-center p-6 border border-dashed border-white/10 group-hover:border-[#ccff00]/20 transition-colors overflow-hidden relative">
+                       <div className="flex-1 bg-[#0a0a0a]/50 rounded-xl flex flex-col items-center justify-center text-center p-6 border border-dashed border-white/10 group-hover:border-[#ccff00]/20 transition-colors overflow-hidden relative">
                           {uploadedImage ? (
                              <img src={uploadedImage} className="w-full h-full object-cover rounded-lg" alt="Character" />
                           ) : (
                              <>
-                                <div className="w-12 h-12 bg-[#1a1a1a] rounded-full flex items-center justify-center mb-4 text-[#ccff00] shadow-lg shadow-[#ccff00]/5">
+                                <div className="w-12 h-12 bg-[#1a1a1a] rounded-full flex items-center justify-center mb-4 text-[#ccff00] shadow-lg shadow-[#ccff00]/5 group-hover:scale-110 transition-transform">
                                    <Plus size={24} />
                                 </div>
                                 <h3 className="text-white font-bold mb-2">Karakterini Ekle</h3>
@@ -420,7 +436,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
 
                  {/* Settings */}
                  <div className="space-y-3">
-                    <div className="bg-[#111] border border-white/10 rounded-xl p-4 flex items-center justify-between">
+                    <div className="bg-[#0f0f0f]/80 backdrop-blur-sm border border-white/10 rounded-xl p-4 flex items-center justify-between shadow-lg">
                        <div>
                           <span className="text-xs text-gray-500 block mb-1">Model</span>
                           <span className="text-white font-bold flex items-center gap-2">
@@ -429,7 +445,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                        </div>
                        <ChevronRight size={18} className="text-gray-600" />
                     </div>
-                    <div className="bg-[#111] border border-white/10 rounded-xl p-4 flex items-center justify-between group cursor-pointer relative">
+                    <div className="bg-[#0f0f0f]/80 backdrop-blur-sm border border-white/10 rounded-xl p-4 flex items-center justify-between group cursor-pointer relative shadow-lg">
                        <div>
                           <span className="text-xs text-gray-500 block mb-1">Kalite</span>
                           <span className="text-white font-bold">{quality}</span>
@@ -447,7 +463,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                     </div>
                  </div>
 
-                 <div className="bg-[#111] border border-white/10 rounded-2xl p-5">
+                 <div className="bg-[#0f0f0f]/80 backdrop-blur-sm border border-white/10 rounded-2xl p-5 shadow-lg">
                     <div className="flex items-center justify-between mb-3">
                        <div className="flex items-center gap-2 text-white font-bold">
                           <Sparkles size={16} className="text-[#ccff00]" /> Ekstra İstekler (Prompt)
@@ -458,7 +474,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                        value={extraPrompt}
                        onChange={(e) => setExtraPrompt(e.target.value)}
                        placeholder="Işıklandırma, arka plan veya ruh hali gibi detayları buraya yazabilirsiniz..."
-                       className="w-full bg-[#0a0a0a] border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-[#ccff00]/50 min-h-[80px] resize-none"
+                       className="w-full bg-[#0a0a0a]/50 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-[#ccff00]/50 min-h-[80px] resize-none"
                     />
                  </div>
 
@@ -474,8 +490,6 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                     )}
                  </button>
 
-                 {/* In-App Ad Slot REMOVED */}
-
                  {/* Results Section */}
                  <div id="results-section" className="pt-8 border-t border-white/5">
                      <div className="flex items-center gap-3 mb-6">
@@ -486,7 +500,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                      </div>
 
                      {generatedResults.length === 0 ? (
-                         <div className="bg-black border border-dashed border-white/10 rounded-2xl p-16 flex flex-col items-center justify-center text-center">
+                         <div className="bg-[#0a0a0a]/50 border border-dashed border-white/10 rounded-2xl p-16 flex flex-col items-center justify-center text-center">
                              <div className="w-12 h-12 bg-[#111] rounded-xl flex items-center justify-center mb-6 text-gray-600">
                                 <LayoutGrid size={24} />
                              </div>
@@ -501,7 +515,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                                          key={result.id}
                                          initial={{ opacity: 0, y: 20 }}
                                          animate={{ opacity: 1, y: 0 }}
-                                         className="bg-[#0f0f0f] border border-white/10 rounded-2xl overflow-hidden p-4 group hover:border-[#ccff00]/20 transition-all"
+                                         className="bg-[#0f0f0f] border border-white/10 rounded-2xl overflow-hidden p-4 group hover:border-[#ccff00]/20 transition-all shadow-lg"
                                      >
                                          <div className="aspect-video bg-black rounded-xl overflow-hidden mb-4 relative">
                                              <video src={result.videoUrl} controls className="w-full h-full object-contain" />
@@ -542,7 +556,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {pricingOptions.map((pack, idx) => (
-                          <div key={idx} className={`rounded-3xl p-6 border border-white/10 flex flex-col items-center text-center hover:scale-105 transition-transform duration-300 ${pack.color}`}>
+                          <div key={idx} className={`rounded-3xl p-6 border border-white/10 flex flex-col items-center text-center hover:scale-105 transition-transform duration-300 shadow-xl ${pack.color}`}>
                              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-4 text-[#ccff00]">
                                 <Coins size={24} />
                              </div>
@@ -559,7 +573,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                       ))}
                   </div>
                   
-                  <div className="bg-[#111] rounded-2xl p-6 flex items-start gap-4 border border-white/5">
+                  <div className="bg-[#0f0f0f] rounded-2xl p-6 flex items-start gap-4 border border-white/5 shadow-lg">
                      <div className="p-2 bg-[#ccff00]/10 rounded-lg text-[#ccff00]"><CheckCircle2 size={20} /></div>
                      <div>
                         <h4 className="font-bold text-white text-sm mb-1">Güvenli Ödeme & Anında Teslimat</h4>
@@ -573,7 +587,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                <div className="max-w-3xl mx-auto w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <h2 className="text-2xl font-bold text-white mb-6 border-b border-white/10 pb-4">Hesap Ayarları</h2>
                   
-                  <div className="bg-[#111] rounded-2xl p-6 border border-white/10 space-y-6">
+                  <div className="bg-[#0f0f0f] rounded-2xl p-6 border border-white/10 space-y-6 shadow-lg">
                      <div className="flex items-center gap-4">
                         <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#ccff00] to-green-600 flex items-center justify-center font-bold text-black text-2xl">
                            AR
@@ -587,17 +601,17 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                            <label className="block text-xs font-bold text-gray-500 mb-2">AD</label>
-                           <input type="text" defaultValue="Arsell" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ccff00] focus:outline-none" />
+                           <input type="text" defaultValue="Arsell" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ccff00] focus:outline-none" />
                         </div>
                         <div>
                            <label className="block text-xs font-bold text-gray-500 mb-2">SOYAD</label>
-                           <input type="text" defaultValue="Kullanıcısı" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ccff00] focus:outline-none" />
+                           <input type="text" defaultValue="Kullanıcısı" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ccff00] focus:outline-none" />
                         </div>
                         <div className="md:col-span-2">
                            <label className="block text-xs font-bold text-gray-500 mb-2">E-POSTA</label>
                            <div className="relative">
                               <Mail size={16} className="absolute left-4 top-3.5 text-gray-500" />
-                              <input type="email" defaultValue="user@arsell.com" className="w-full bg-black border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#ccff00] focus:outline-none" />
+                              <input type="email" defaultValue="user@arsell.com" className="w-full bg-black/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#ccff00] focus:outline-none" />
                            </div>
                         </div>
                      </div>
@@ -609,7 +623,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                      </div>
                   </div>
 
-                  <div className="bg-[#111] rounded-2xl p-6 border border-white/10 flex items-center justify-between">
+                  <div className="bg-[#0f0f0f] rounded-2xl p-6 border border-white/10 flex items-center justify-between shadow-lg">
                      <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-gray-400">
                            <Bell size={20} />
@@ -662,7 +676,7 @@ const Navbar = ({ onLogin }: { onLogin: () => void }) => {
           <div className="hidden md:block">
             <div className="ml-12 flex items-center space-x-1">
               {['Özellikler', 'Nasıl Çalışır', 'Fiyatlandırma'].map((item, i) => (
-                <a key={item} href={`#${['features', 'how-it-works', 'pricing'][i]}`} className="text-sm font-medium text-gray-400 hover:text-white px-4 py-2 rounded-full hover:bg-white/5 transition-all">
+                <a key={item} href={`#${['features', 'how-it-works', 'pricing'][i]}`} className="text-sm font-medium text-gray-300 hover:text-white px-4 py-2 rounded-full hover:bg-white/5 transition-all">
                   {item}
                 </a>
               ))}
@@ -759,7 +773,7 @@ const AiInterfaceMockup = ({ onLogin }: { onLogin: () => void }) => {
 
 const BentoGridFeatures = () => {
   return (
-    <section id="features" className="py-32 bg-[#050505] relative overflow-hidden">
+    <section id="features" className="py-32 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 relative z-10">
          <div className="text-center mb-20">
             <h2 className="text-4xl md:text-6xl font-black text-white mb-6">SINIRSIZ <span className="text-[#ccff00]">YETENEK</span></h2>
@@ -767,9 +781,9 @@ const BentoGridFeatures = () => {
          </div>
 
          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-auto md:h-[600px]">
-            <div className="md:col-span-2 md:row-span-2 relative bg-[#0a0a0a] rounded-3xl border border-white/10 overflow-hidden group hover:border-[#ccff00]/30 transition-all duration-500">
-               <div className="absolute inset-0 bg-gradient-to-br from-[#ccff00]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10"></div>
-               <div className="p-8 md:p-12 h-full flex flex-col justify-between relative z-20">
+            <div className="md:col-span-2 md:row-span-2 relative bg-[#0a0a0a] rounded-3xl border border-white/10 overflow-hidden group hover:border-[#ccff00]/30 transition-all duration-500 shadow-xl">
+               <div className="absolute inset-0 bg-gradient-to-br from-[#ccff00]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none"></div>
+               <div className="p-8 md:p-12 h-full flex flex-col justify-between relative z-20 pointer-events-none">
                   <div>
                      <div className="w-12 h-12 bg-[#ccff00] rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-[#ccff00]/20">
                         <Move className="text-black" size={24} />
@@ -779,23 +793,22 @@ const BentoGridFeatures = () => {
                         Herhangi bir videodan hareketi kopyalayın ve karakterinizi aynı harekete yerleştirin.
                      </p>
                   </div>
-                  <div className="mt-8 relative rounded-xl overflow-hidden border border-white/10 shadow-2xl h-64 md:h-80">
-                     <video 
-                        src="https://assets.mixkit.co/videos/preview/mixkit-futuristic-robot-dancing-40404-large.mp4" 
-                        className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" 
-                        autoPlay 
-                        muted 
-                        loop 
-                        playsInline
+                  <div className="mt-8 relative rounded-xl overflow-hidden border border-white/10 shadow-2xl h-64 md:h-80 pointer-events-auto">
+                     <iframe 
+                        src="https://player.vimeo.com/video/1165347552?background=1&autoplay=1&loop=1&badge=0&autopause=0" 
+                        className="absolute top-0 left-0 w-full h-full transform group-hover:scale-105 transition-transform duration-700"
+                        frameBorder="0" 
+                        allow="autoplay; fullscreen; picture-in-picture" 
+                        title="Motion Transfer Demo"
                      />
-                     <div className="absolute bottom-4 left-4 bg-black/70 backdrop-blur px-3 py-1 rounded text-xs border border-white/10 text-white">
+                     <div className="absolute bottom-4 left-4 bg-black/70 backdrop-blur px-3 py-1 rounded text-xs border border-white/10 text-white z-10">
                         Motion Transfer Active
                      </div>
                   </div>
                </div>
             </div>
 
-            <div className="md:col-span-1 relative bg-[#0a0a0a] rounded-3xl border border-white/10 overflow-hidden group hover:border-[#ccff00]/30 transition-all duration-500">
+            <div className="md:col-span-1 relative bg-[#0a0a0a] rounded-3xl border border-white/10 overflow-hidden group hover:border-[#ccff00]/30 transition-all duration-500 shadow-xl">
                <div className="p-8 h-full flex flex-col">
                   <div className="w-10 h-10 bg-[#1a1a1a] border border-white/10 rounded-lg flex items-center justify-center mb-4 text-[#ccff00]">
                      <Cpu size={20} />
@@ -811,7 +824,7 @@ const BentoGridFeatures = () => {
                </div>
             </div>
 
-            <div className="md:col-span-1 relative bg-[#0a0a0a] rounded-3xl border border-white/10 overflow-hidden group hover:border-[#ccff00]/30 transition-all duration-500">
+            <div className="md:col-span-1 relative bg-[#0a0a0a] rounded-3xl border border-white/10 overflow-hidden group hover:border-[#ccff00]/30 transition-all duration-500 shadow-xl">
                <div className="p-8 h-full flex flex-col">
                   <div className="w-10 h-10 bg-[#1a1a1a] border border-white/10 rounded-lg flex items-center justify-center mb-4 text-[#ccff00]">
                      <Sparkles size={20} />
@@ -853,9 +866,7 @@ const HowItWorks = () => {
    ];
 
    return (
-      <section id="how-it-works" className="py-24 bg-black relative overflow-hidden">
-         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#ccff00]/5 blur-[120px] rounded-full pointer-events-none"></div>
-
+      <section id="how-it-works" className="py-24 relative overflow-hidden">
          <div className="max-w-7xl mx-auto px-6 relative z-10">
             <div className="text-center mb-20">
                <span className="text-[#ccff00] text-xs font-bold tracking-[0.2em] uppercase mb-4 block animate-pulse">Basit Akış</span>
@@ -921,9 +932,7 @@ const PricingSection = ({ onPlanSelect }: { onPlanSelect: () => void }) => {
   ];
 
   return (
-    <section className="py-32 bg-black relative border-t border-white/5" id="pricing">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] bg-[#ccff00]/5 blur-[150px] rounded-full pointer-events-none"></div>
-      
+    <section className="py-32 relative border-t border-white/5" id="pricing">
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center mb-20">
            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[#ccff00] text-xs font-bold uppercase tracking-wider mb-6">
@@ -1015,12 +1024,12 @@ const Testimonials = () => {
    ];
 
    return (
-      <section className="py-24 bg-[#050505] border-t border-white/5">
+      <section className="py-24 bg-[#020202] border-t border-white/5">
          <div className="max-w-7xl mx-auto px-6">
             <h2 className="text-3xl font-bold text-center text-white mb-12">Üreticiler Ne Diyor?</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                {reviews.map((r, i) => (
-                  <div key={i} className="bg-[#0a0a0a] p-8 rounded-3xl border border-white/5 hover:border-[#ccff00]/20 transition-all group flex flex-col h-full">
+                  <div key={i} className="bg-[#0a0a0a] p-8 rounded-3xl border border-white/5 hover:border-[#ccff00]/20 transition-all group flex flex-col h-full shadow-lg">
                      <div className="flex justify-between items-start mb-6">
                         <div className="w-12 h-12 rounded-2xl bg-[#111] border border-white/10 flex items-center justify-center text-[#ccff00] group-hover:bg-[#ccff00] group-hover:text-black transition-colors">
                            <r.icon size={24} />
@@ -1103,25 +1112,18 @@ const FAQSection = () => {
       answer: "Creator ve Studio paketleriyle oluşturduğunuz tüm içeriklerin ticari kullanım hakları %100 size aittir. Youtube'da para kazanabilir, reklamlarınızda kullanabilirsiniz."
     },
     {
-      question: "Memnun kalmazsam iade alabilir miyim?",
-      answer: "Kredilerinizi hiç kullanmadıysanız 14 gün içinde koşulsuz iade talep edebilirsiniz. Kullanılmış paketlerde iade yapılmamaktadır."
-    },
-    {
-      question: "Kendi görsellerimi referans olarak kullanabilir miyim?",
-      answer: "Kesinlikle. 'Image-to-Video' özelliğimiz ile kendi yüklediğiniz fotoğrafları veya çizimleri hareketli videolara dönüştürebilirsiniz."
+      question: "İade politikanız nedir?",
+      answer: "Dijital ürünlerde iade politikamız gereği, harcanmamış krediler için 14 gün içinde iade talep edebilirsiniz. Kullanılmış kredilerin iadesi yapılmamaktadır."
     }
   ];
 
   return (
-    <section className="py-24 bg-black border-t border-white/5">
-      <div className="max-w-4xl mx-auto px-6">
-        <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white mb-4">Sıkça Sorulan Sorular</h2>
-            <p className="text-gray-500">Aklınıza takılan başka bir şey mi var? Destek ekibimiz 7/24 yanınızda.</p>
-        </div>
+    <section className="py-24 border-t border-white/5" id="faq">
+      <div className="max-w-3xl mx-auto px-6">
+        <h2 className="text-3xl font-black text-center text-white mb-12">Sıkça Sorulan Sorular</h2>
         <div className="space-y-4">
-          {faqs.map((faq, index) => (
-            <FAQItem key={index} question={faq.question} answer={faq.answer} />
+          {faqs.map((faq, i) => (
+            <FAQItem key={i} question={faq.question} answer={faq.answer} />
           ))}
         </div>
       </div>
@@ -1129,101 +1131,95 @@ const FAQSection = () => {
   );
 };
 
-// --- Landing Page Definition (TURKISH VERSION) ---
-const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
-  return (
-    <div className="bg-black text-white selection:bg-[#ccff00] selection:text-black relative">
-      <Navbar onLogin={onLogin} />
-      
-      {/* Hero Section */}
-      <header className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden px-6">
-         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
-         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[#ccff00]/10 blur-[120px] rounded-full pointer-events-none"></div>
-
-         <div className="max-w-5xl mx-auto relative z-10 text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[#ccff00] text-xs font-bold uppercase tracking-wider mb-8 animate-pulse">
-               <Sparkles size={14} /> Arsell Motion v3.0 Şimdi Yayında
-            </div>
-            
-            <h1 className="text-5xl md:text-8xl font-black tracking-tight mb-8 leading-tight">
-               HAYAL ET. <br />
-               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ccff00] to-green-500">HAREKET ETTİR.</span>
-            </h1>
-            
-            <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-               Sıradan videoları sinematik şaheserlere dönüştürün. <br className="hidden md:block"/>
-               Yapay zeka destekli motion transfer teknolojisi.
-            </p>
-
-            <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-20">
-               <Button onClick={onLogin} className="w-full md:w-auto text-lg h-14">Hemen Başla <ArrowRight size={20}/></Button>
-               <Button onClick={onLogin} variant="outline" className="w-full md:w-auto text-lg h-14">Örnekleri İncele</Button>
-            </div>
-
-            <div className="relative mx-auto w-full max-w-5xl">
-               <div className="absolute -inset-1 bg-gradient-to-r from-[#ccff00] to-green-600 rounded-2xl blur opacity-20"></div>
-               <AiInterfaceMockup onLogin={onLogin} />
-            </div>
-         </div>
-      </header>
-
-      {/* 1st Ad Position */}
-      <AdSenseContainer className="mx-6" />
-
-      <BentoGridFeatures />
-      
-      <HowItWorks />
-      
-      <Testimonials />
-
-      <PricingSection onPlanSelect={onLogin} />
-
-      {/* 2nd Ad Position */}
-      <AdSenseContainer className="mx-6" />
-
-      <FAQSection />
-
-      <footer className="bg-[#050505] border-t border-white/5 py-12 px-6">
-         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <Logo className="h-6 opacity-50 grayscale hover:grayscale-0 transition-all" />
-            <div className="text-gray-600 text-sm">© 2024 Arsell Motion AI. Tüm hakları saklıdır.</div>
-            <div className="flex gap-6 text-gray-500">
-               <a href="#" className="hover:text-white transition-colors">Privacy</a>
-               <a href="#" className="hover:text-white transition-colors">Terms</a>
-               <a href="#" className="hover:text-white transition-colors">Twitter</a>
-            </div>
-         </div>
-      </footer>
-    </div>
-  );
-};
-
-// --- Main App Component ---
-
 const App = () => {
-  const [currentView, setCurrentView] = useState<ViewState>('landing');
+  const [view, setView] = useState<ViewState>('landing');
 
-  // View switchers
-  const goToAuth = () => {
-    window.scrollTo(0,0);
-    setCurrentView('auth');
-  };
-  
-  const enterApp = () => {
-    window.scrollTo(0,0);
-    setCurrentView('app');
-  };
+  // Check for session (mock)
+  useEffect(() => {
+    // Auto login check or similar could go here
+  }, []);
 
-  const logout = () => {
-    window.scrollTo(0,0);
-    setCurrentView('landing');
-  };
+  if (view === 'auth') {
+    return <AuthScreen onLogin={() => setView('app')} />;
+  }
+
+  if (view === 'app') {
+    return <Dashboard onLogout={() => setView('landing')} />;
+  }
 
   return (
-    <div className="font-sans antialiased">
-       {currentView === 'landing' && <LandingPage onLogin={goToAuth} />}
-       {currentView === 'auth' && <AuthScreen onLogin={enterApp} />}
-       {currentView === 'app' && <Dashboard onLogout={logout} />}
+    <div className="min-h-screen bg-[#020202] text-white selection:bg-[#ccff00] selection:text-black font-sans relative">
+       <BackgroundEffects variant="default" />
+       
+       <Navbar onLogin={() => setView('auth')} />
+       
+       <main className="relative z-10">
+         {/* Hero Section */}
+         <header className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-6 overflow-hidden">
+            <div className="max-w-7xl mx-auto text-center relative z-10">
+               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="inline-block mb-6">
+                  <span className="py-2 px-4 rounded-full border border-[#ccff00]/30 bg-[#ccff00]/10 text-[#ccff00] font-mono text-sm tracking-widest uppercase">
+                     v3.0 Şimdi Yayında
+                  </span>
+               </motion.div>
+               <motion.h1 
+                 initial={{ opacity: 0, y: 20 }} 
+                 animate={{ opacity: 1, y: 0 }} 
+                 transition={{ delay: 0.1 }}
+                 className="text-5xl md:text-8xl font-black mb-8 tracking-tighter leading-[0.9]"
+               >
+                  HAYAL GÜCÜNÜ <br/>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-b from-[#ccff00] to-green-600">HAREKETE GEÇİR.</span>
+               </motion.h1>
+               <motion.p 
+                 initial={{ opacity: 0, y: 20 }} 
+                 animate={{ opacity: 1, y: 0 }} 
+                 transition={{ delay: 0.2 }}
+                 className="text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed"
+               >
+                  Profesyonel video üretimi artık herkes için erişilebilir. 
+                  Referans videonu yükle, karakterini seç ve yapay zekanın büyüsünü izle.
+               </motion.p>
+               <motion.div 
+                 initial={{ opacity: 0, y: 20 }} 
+                 animate={{ opacity: 1, y: 0 }} 
+                 transition={{ delay: 0.3 }}
+                 className="flex flex-col md:flex-row items-center justify-center gap-4"
+               >
+                  <Button onClick={() => setView('auth')} className="w-full md:w-auto text-lg px-10 py-4">Hemen Başla</Button>
+                  <Button variant="secondary" className="w-full md:w-auto text-lg px-10 py-4" onClick={() => document.getElementById('features')?.scrollIntoView({behavior: 'smooth'})}>Keşfet</Button>
+               </motion.div>
+            </div>
+         </header>
+
+         <div className="px-6 pb-24 relative z-10">
+            <AiInterfaceMockup onLogin={() => setView('auth')} />
+         </div>
+
+         <BentoGridFeatures />
+         
+         <HowItWorks />
+         
+         <Testimonials />
+         
+         <PricingSection onPlanSelect={() => setView('auth')} />
+         
+         <FAQSection />
+       </main>
+
+       <footer className="py-12 border-t border-white/5 bg-[#0a0a0a] relative z-10">
+          <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+             <div className="flex items-center gap-2">
+                <Logo className="h-6" />
+                <span className="text-gray-500 text-sm">© 2024 Arsell Motion AI</span>
+             </div>
+             <div className="flex gap-6 text-sm text-gray-500">
+                <a href="#" className="hover:text-white transition-colors">Gizlilik</a>
+                <a href="#" className="hover:text-white transition-colors">Şartlar</a>
+                <a href="#" className="hover:text-white transition-colors">İletişim</a>
+             </div>
+          </div>
+       </footer>
     </div>
   );
 };

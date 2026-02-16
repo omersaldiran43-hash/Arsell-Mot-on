@@ -63,13 +63,29 @@ const Button = ({ children, variant = 'primary', className = '', onClick }: { ch
   );
 };
 
-// Simplified AdSense Container (Minimal - Rounded & Connected Border)
+// Simplified AdSense Container (Corner Lines Only - Large Banner Style)
 const AdSenseContainer = ({ className = "" }: { className?: string }) => {
   return (
-    <div 
-      className={`w-full max-w-7xl mx-auto my-12 h-[120px] rounded-[32px] border border-white/10 ${className}`} 
-      aria-label="Advertisement Placeholder"
-    />
+    <div className={`w-full max-w-7xl mx-auto my-24 relative h-[280px] bg-[#080808] flex items-center justify-center ${className}`}>
+        {/* Top Left */}
+        <div className="absolute top-0 left-0 w-8 h-8 border-l-2 border-t-2 border-white/20"></div>
+        {/* Top Right */}
+        <div className="absolute top-0 right-0 w-8 h-8 border-r-2 border-t-2 border-white/20"></div>
+        {/* Bottom Left */}
+        <div className="absolute bottom-0 left-0 w-8 h-8 border-l-2 border-b-2 border-white/20"></div>
+        {/* Bottom Right */}
+        <div className="absolute bottom-0 right-0 w-8 h-8 border-r-2 border-b-2 border-white/20"></div>
+        
+        {/* Placeholder Content */}
+        <div className="flex flex-col items-center gap-4 opacity-30 select-none">
+           <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
+              <span className="text-2xl font-bold text-white">Ad</span>
+           </div>
+           <div className="text-gray-500 font-medium text-sm tracking-widest uppercase">
+              Reklam Alanı
+           </div>
+        </div>
+    </div>
   );
 };
 
@@ -1119,8 +1135,6 @@ const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
     <div className="bg-black text-white selection:bg-[#ccff00] selection:text-black relative">
       <Navbar onLogin={onLogin} />
       
-      {/* Side Rails (Ads) Removed */}
-      
       {/* Hero Section */}
       <header className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden px-6">
          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
@@ -1153,23 +1167,18 @@ const LandingPage = ({ onLogin }: { onLogin: () => void }) => {
          </div>
       </header>
 
-      {/* AdSense Slot 1 (Corner Lines Only) */}
+      {/* 1st Ad Position */}
       <AdSenseContainer className="mx-6" />
 
       <BentoGridFeatures />
       
-      {/* AdSense Slot 2 (New - Corner Lines Only) */}
-      <AdSenseContainer className="mx-6" />
-
       <HowItWorks />
       
-      {/* AdSense Slot 3 (Corner Lines Only) */}
-      <AdSenseContainer className="mx-6" />
-      
       <Testimonials />
+
       <PricingSection onPlanSelect={onLogin} />
 
-      {/* AdSense Slot 4 (New - Corner Lines Only) */}
+      {/* 2nd Ad Position */}
       <AdSenseContainer className="mx-6" />
 
       <FAQSection />

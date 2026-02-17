@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from './lib/supabase';
 import { 
   Zap, 
   Menu, 
@@ -32,7 +33,8 @@ import {
   User,
   Mail,
   Save,
-  Bell
+  Bell,
+  Loader2
 } from 'lucide-react';
 
 // --- Global Types & Variants ---
@@ -47,8 +49,8 @@ const Logo = ({ className = "h-8" }: { className?: string }) => (
   <img src={LOGO_URL} alt="Arsell Motion" className={`${className} object-contain`} />
 );
 
-const Button = ({ children, variant = 'primary', className = '', onClick }: { children: React.ReactNode, variant?: 'primary' | 'secondary' | 'outline' | 'google', className?: string, onClick?: () => void }) => {
-  const baseStyle = "px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 cursor-pointer select-none";
+const Button = ({ children, variant = 'primary', className = '', onClick, disabled = false }: { children?: React.ReactNode, variant?: 'primary' | 'secondary' | 'outline' | 'google', className?: string, onClick?: () => void, disabled?: boolean }) => {
+  const baseStyle = "px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed";
   const variants = {
     primary: "bg-[#ccff00] text-black hover:bg-[#b3e600] shadow-[0_0_20px_rgba(204,255,0,0.2)] hover:shadow-[0_0_30px_rgba(204,255,0,0.4)]",
     secondary: "bg-white/5 text-white hover:bg-white/10 backdrop-blur-md border border-white/10",
@@ -57,7 +59,7 @@ const Button = ({ children, variant = 'primary', className = '', onClick }: { ch
   };
 
   return (
-    <button onClick={onClick} className={`${baseStyle} ${variants[variant]} ${className}`}>
+    <button onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>
       {children}
     </button>
   );
@@ -106,8 +108,69 @@ const BackgroundEffects = ({ variant = 'default' }: { variant?: 'default' | 'aut
 
 // --- AUTH SCREEN ---
 
-const AuthScreen = ({ onLogin }: { onLogin: () => void }) => {
+const AuthScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg('');
+
+    try {
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              first_name: firstName,
+              last_name: lastName,
+            },
+          },
+        });
+        if (error) throw error;
+      }
+      onLoginSuccess();
+    } catch (error: any) {
+      setErrorMsg(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setErrorMsg('');
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}`, // Production ve Localhost için dinamik URL
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+      if (error) throw error;
+      // Not: OAuth başarılı olursa sayfa yönlendirileceği için loading'i kapatmaya gerek kalmaz.
+    } catch (error: any) {
+      setErrorMsg(error.message);
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden p-4">
@@ -146,14 +209,19 @@ const AuthScreen = ({ onLogin }: { onLogin: () => void }) => {
               </button>
            </div>
 
-           <Button variant="google" className="w-full relative group hover:bg-gray-50 transition-colors" onClick={onLogin}>
+           <Button 
+             variant="google" 
+             className="w-full relative group hover:bg-gray-50 transition-colors"
+             onClick={handleGoogleLogin}
+             disabled={loading}
+           >
              <svg className="w-5 h-5 absolute left-6 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
              </svg>
-             Google ile Devam Et
+             {loading ? 'Yönlendiriliyor...' : 'Google ile Devam Et'}
            </Button>
            
            <div className="relative flex py-2 items-center">
@@ -162,7 +230,7 @@ const AuthScreen = ({ onLogin }: { onLogin: () => void }) => {
               <div className="flex-grow border-t border-white/10"></div>
            </div>
 
-           <form className="space-y-4 relative z-10" onSubmit={(e) => { e.preventDefault(); onLogin(); }}>
+           <form className="space-y-4 relative z-10" onSubmit={handleAuth}>
               <AnimatePresence mode="popLayout">
                 {!isLogin && (
                   <motion.div 
@@ -175,12 +243,12 @@ const AuthScreen = ({ onLogin }: { onLogin: () => void }) => {
                       <label className="block text-[10px] font-bold text-gray-500 mb-1 ml-1 uppercase tracking-wider">AD</label>
                       <div className="relative">
                         <User size={16} className="absolute left-4 top-3.5 text-gray-500" />
-                        <input type="text" placeholder="Ahmet" className="w-full bg-black/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/50 transition-all placeholder:text-gray-700" />
+                        <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Ad" className="w-full bg-black/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/50 transition-all placeholder:text-gray-700" />
                       </div>
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold text-gray-500 mb-1 ml-1 uppercase tracking-wider">SOYAD</label>
-                      <input type="text" placeholder="Yılmaz" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/50 transition-all placeholder:text-gray-700" />
+                      <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Soyad" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/50 transition-all placeholder:text-gray-700" />
                     </div>
                   </motion.div>
                 )}
@@ -190,16 +258,24 @@ const AuthScreen = ({ onLogin }: { onLogin: () => void }) => {
                 <label className="block text-[10px] font-bold text-gray-500 mb-1 ml-1 uppercase tracking-wider">E-POSTA ADRESİ</label>
                 <div className="relative">
                   <Mail size={16} className="absolute left-4 top-3.5 text-gray-500" />
-                  <input type="email" placeholder="ornek@arsell.com" className="w-full bg-black/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/50 transition-all placeholder:text-gray-700" />
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="ornek@arsell.com" className="w-full bg-black/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/50 transition-all placeholder:text-gray-700" />
                 </div>
               </div>
               
               <div>
                 <label className="block text-[10px] font-bold text-gray-500 mb-1 ml-1 uppercase tracking-wider">ŞİFRE</label>
-                <input type="password" placeholder="••••••••" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/50 transition-all placeholder:text-gray-700" />
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#ccff00] focus:ring-1 focus:ring-[#ccff00]/50 transition-all placeholder:text-gray-700" />
               </div>
 
-              <Button className="w-full mt-2">{isLogin ? 'Giriş Yap' : 'Kayıt Ol'}</Button>
+              {errorMsg && (
+                <div className="text-red-500 text-xs text-center bg-red-500/10 p-2 rounded-lg border border-red-500/20">
+                  {errorMsg}
+                </div>
+              )}
+
+              <Button disabled={loading} className="w-full mt-2">
+                {loading ? <Loader2 size={16} className="animate-spin" /> : (isLogin ? 'Giriş Yap' : 'Kayıt Ol')}
+              </Button>
            </form>
         </div>
         
@@ -214,9 +290,26 @@ const AuthScreen = ({ onLogin }: { onLogin: () => void }) => {
 // --- DASHBOARD COMPONENTS ---
 
 interface GeneratedResult {
+  id: string;
+  output_video_url: string;
+  created_at: string;
+  status: string;
+}
+
+interface UserProfile {
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+interface CreditPackage {
   id: number;
-  videoUrl: string;
-  timestamp: string;
+  name: string;
+  credits: number;
+  price: number;
+  description: string;
+  features: string[];
+  is_popular: boolean;
 }
 
 const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
@@ -225,11 +318,55 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   const [extraPrompt, setExtraPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedResults, setGeneratedResults] = useState<GeneratedResult[]>([]);
-  const [credits, setCredits] = useState(150);
+  const [credits, setCredits] = useState<number | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [packages, setPackages] = useState<CreditPackage[]>([]);
 
   // Layout Refs
   const [uploadedVideo, setUploadedVideo] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchUserData();
+    fetchPackages();
+    fetchGenerations();
+
+    // Subscribe to realtime changes for credits and generations
+    const creditsSub = supabase
+      .channel('custom-all-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_balances' }, (payload) => {
+        fetchUserData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'generations' }, (payload) => {
+        fetchGenerations();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(creditsSub);
+    }
+  }, []);
+
+  const fetchUserData = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      const { data: balanceData } = await supabase.from('user_balances').select('credits').eq('user_id', user.id).single();
+      
+      setProfile(profileData);
+      setCredits(balanceData?.credits || 0);
+    }
+  };
+
+  const fetchPackages = async () => {
+    const { data } = await supabase.from('credit_packages').select('*').order('price');
+    if (data) setPackages(data);
+  };
+
+  const fetchGenerations = async () => {
+    const { data } = await supabase.from('generations').select('*').order('created_at', { ascending: false });
+    if (data) setGeneratedResults(data);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'video' | 'image') => {
     const file = e.target.files?.[0];
@@ -240,8 +377,8 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
     }
   };
 
-  const handleGenerate = () => {
-    if (credits < 5) {
+  const handleGenerate = async () => {
+    if (credits === null || credits < 5) {
       alert("Yetersiz kredi! Lütfen kredi yükleyin.");
       setActiveTab('pricing');
       return;
@@ -251,32 +388,61 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
       return;
     }
     
-    setCredits(prev => prev - 5);
     setIsGenerating(true);
-    
-    setTimeout(() => {
-      const newResult = {
-        id: Date.now(),
-        videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-futuristic-robot-dancing-40404-large.mp4", 
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      
-      setGeneratedResults([newResult, ...generatedResults]);
-      setIsGenerating(false);
-      
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if(!user) return;
+
+      // 1. Spend Credits (Server-side secure function)
+      const { data: success, error: spendError } = await supabase.rpc('spend_credits', { 
+        amount: 5, 
+        description: 'Motion Transfer Generation' 
+      });
+
+      if (spendError || !success) {
+        throw new Error("Kredi düşülemedi veya yetersiz bakiye.");
+      }
+
+      // 2. Insert Generation Record
+      // For demo purposes, we mock the output URL. In production, this would be an API call to the GPU worker.
+      const mockOutput = "https://assets.mixkit.co/videos/preview/mixkit-futuristic-robot-dancing-40404-large.mp4";
+
+      const { error: genError } = await supabase.from('generations').insert({
+        user_id: user.id,
+        prompt: extraPrompt,
+        input_video_url: 'uploaded_video_placeholder',
+        input_image_url: 'uploaded_image_placeholder',
+        output_video_url: mockOutput,
+        status: 'completed'
+      });
+
+      if (genError) throw genError;
+
       const resultsElement = document.getElementById('results-section');
       if (resultsElement) {
         resultsElement.scrollIntoView({ behavior: 'smooth' });
       }
-    }, 3000);
+
+    } catch (error: any) {
+      alert("Hata oluştu: " + error.message);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  const handleBuyCredits = (amount: number) => {
+  const handleBuyCredits = async (amount: number, description: string) => {
     const confirm = window.confirm(`${amount} kredi satın almak istiyor musunuz?`);
     if(confirm) {
-        setCredits(prev => prev + amount);
+      // Simulate Payment & Add Credits via DB function
+      try {
+        const { error } = await supabase.rpc('add_credits', { amount, description: `Satın alma: ${description}` });
+        if(error) throw error;
         alert("Krediler başarıyla eklendi!");
         setActiveTab('generate');
+      } catch (e:any) {
+        alert("Yükleme hatası: " + e.message);
+      }
     }
   };
 
@@ -289,11 +455,10 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
     document.body.removeChild(link);
   };
 
-  const pricingOptions = [
-      { name: "Küçük Paket", amount: 100, price: "99 TL", color: "bg-[#0f0f0f]" },
-      { name: "Orta Paket", amount: 500, price: "399 TL", color: "bg-[#0f0f0f] border-[#ccff00]" },
-      { name: "Pro Paket", amount: 1500, price: "999 TL", color: "bg-[#0f0f0f]" },
-  ];
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    onLogout();
+  };
 
   return (
     <div className="flex h-screen bg-black text-white overflow-hidden font-sans selection:bg-[#ccff00] selection:text-black">
@@ -327,7 +492,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                </div>
                <div>
                  <div className="text-xs text-gray-400">Krediler</div>
-                 <div className="text-sm font-bold">{credits} Cr</div>
+                 <div className="text-sm font-bold">{credits !== null ? credits : '...'} Cr</div>
                </div>
                <button 
                   onClick={() => setActiveTab('pricing')}
@@ -339,20 +504,20 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
             {/* Mobile credits view */}
             <div className="lg:hidden flex flex-col items-center gap-1 py-4 cursor-pointer" onClick={() => setActiveTab('pricing')}>
                <Coins size={20} className="text-[#ccff00]"/>
-               <span className="text-[10px] font-bold">{credits}</span>
+               <span className="text-[10px] font-bold">{credits !== null ? credits : '...'}</span>
             </div>
          </div>
 
          <div className="mt-auto p-4 border-t border-white/5 bg-[#080808]">
             <div className="flex items-center gap-3">
-               <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#ccff00] to-green-600 flex items-center justify-center font-bold text-black text-xs shadow-lg shadow-[#ccff00]/10 shrink-0">
-                  AR
+               <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#ccff00] to-green-600 flex items-center justify-center font-bold text-black text-xs shadow-lg shadow-[#ccff00]/10 shrink-0 uppercase">
+                  {profile?.first_name?.[0] || 'U'}
                </div>
                <div className="hidden lg:block flex-1 overflow-hidden">
-                  <p className="text-sm font-bold truncate text-white">Arsell Kullanıcısı</p>
+                  <p className="text-sm font-bold truncate text-white">{profile?.first_name || 'Kullanıcı'}</p>
                   <p className="text-[10px] text-[#ccff00]">Creator Paketi</p>
                </div>
-               <button onClick={onLogout} className="text-gray-500 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full"><LogOut size={16}/></button>
+               <button onClick={handleSignOut} className="text-gray-500 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full"><LogOut size={16}/></button>
             </div>
          </div>
       </div>
@@ -518,9 +683,9 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                                          className="bg-[#0f0f0f] border border-white/10 rounded-2xl overflow-hidden p-4 group hover:border-[#ccff00]/20 transition-all shadow-lg"
                                      >
                                          <div className="aspect-video bg-black rounded-xl overflow-hidden mb-4 relative">
-                                             <video src={result.videoUrl} controls className="w-full h-full object-contain" />
-                                             <div className="absolute top-3 left-3 bg-[#ccff00] text-black text-[10px] font-bold px-2 py-0.5 rounded shadow-lg">
-                                                 HAZIR
+                                             <video src={result.output_video_url} controls className="w-full h-full object-contain" />
+                                             <div className="absolute top-3 left-3 bg-[#ccff00] text-black text-[10px] font-bold px-2 py-0.5 rounded shadow-lg uppercase">
+                                                 {result.status}
                                              </div>
                                          </div>
                                          
@@ -528,11 +693,11 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                                              <div>
                                                  <p className="text-white font-bold text-sm">Motion Transfer Sonucu</p>
                                                  <p className="text-gray-500 text-xs flex items-center gap-1 mt-1">
-                                                     <Clock size={12} /> {result.timestamp} • {quality}
+                                                     <Clock size={12} /> {new Date(result.created_at).toLocaleString()} • {quality}
                                                  </p>
                                              </div>
                                              <button 
-                                                 onClick={() => handleDownload(result.videoUrl)}
+                                                 onClick={() => handleDownload(result.output_video_url)}
                                                  className="bg-white text-black hover:bg-[#ccff00] font-bold text-xs px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
                                              >
                                                  <Download size={14} /> İndir
@@ -555,22 +720,23 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {pricingOptions.map((pack, idx) => (
-                          <div key={idx} className={`rounded-3xl p-6 border border-white/10 flex flex-col items-center text-center hover:scale-105 transition-transform duration-300 shadow-xl ${pack.color}`}>
+                      {packages.map((pack) => (
+                          <div key={pack.id} className={`rounded-3xl p-6 border border-white/10 flex flex-col items-center text-center hover:scale-105 transition-transform duration-300 shadow-xl ${pack.is_popular ? 'bg-[#0f0f0f] border-[#ccff00]' : 'bg-[#0f0f0f]'}`}>
                              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-4 text-[#ccff00]">
                                 <Coins size={24} />
                              </div>
                              <h3 className="font-bold text-white mb-1">{pack.name}</h3>
-                             <div className="text-3xl font-black text-[#ccff00] mb-4">{pack.amount} <span className="text-xs text-gray-400 font-normal">Kredi</span></div>
-                             <div className="text-xl font-bold text-white mb-6">{pack.price}</div>
+                             <div className="text-3xl font-black text-[#ccff00] mb-4">{pack.credits} <span className="text-xs text-gray-400 font-normal">Kredi</span></div>
+                             <div className="text-xl font-bold text-white mb-6">{pack.price} TL</div>
                              <button 
-                                onClick={() => handleBuyCredits(pack.amount)}
+                                onClick={() => handleBuyCredits(pack.credits, pack.name)}
                                 className="w-full bg-white/10 hover:bg-[#ccff00] hover:text-black text-white font-bold py-3 rounded-xl transition-all"
                              >
                                 Satın Al
                              </button>
                           </div>
                       ))}
+                      {packages.length === 0 && <p className="text-center col-span-3 text-gray-500">Paketler yükleniyor...</p>}
                   </div>
                   
                   <div className="bg-[#0f0f0f] rounded-2xl p-6 flex items-start gap-4 border border-white/5 shadow-lg">
@@ -589,8 +755,8 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                   
                   <div className="bg-[#0f0f0f] rounded-2xl p-6 border border-white/10 space-y-6 shadow-lg">
                      <div className="flex items-center gap-4">
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#ccff00] to-green-600 flex items-center justify-center font-bold text-black text-2xl">
-                           AR
+                        <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#ccff00] to-green-600 flex items-center justify-center font-bold text-black text-2xl uppercase">
+                           {profile?.first_name?.[0] || 'U'}
                         </div>
                         <div>
                            <button className="text-[#ccff00] text-sm hover:underline font-bold">Profil Fotoğrafını Değiştir</button>
@@ -601,17 +767,17 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                            <label className="block text-xs font-bold text-gray-500 mb-2">AD</label>
-                           <input type="text" defaultValue="Arsell" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ccff00] focus:outline-none" />
+                           <input type="text" defaultValue={profile?.first_name || ''} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ccff00] focus:outline-none" />
                         </div>
                         <div>
                            <label className="block text-xs font-bold text-gray-500 mb-2">SOYAD</label>
-                           <input type="text" defaultValue="Kullanıcısı" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ccff00] focus:outline-none" />
+                           <input type="text" defaultValue={profile?.last_name || ''} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ccff00] focus:outline-none" />
                         </div>
                         <div className="md:col-span-2">
                            <label className="block text-xs font-bold text-gray-500 mb-2">E-POSTA</label>
                            <div className="relative">
                               <Mail size={16} className="absolute left-4 top-3.5 text-gray-500" />
-                              <input type="email" defaultValue="user@arsell.com" className="w-full bg-black/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#ccff00] focus:outline-none" />
+                              <input type="email" defaultValue={profile?.email || ''} disabled className="w-full bg-black/50 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-gray-500 cursor-not-allowed focus:border-[#ccff00] focus:outline-none" />
                            </div>
                         </div>
                      </div>
@@ -1133,14 +1299,30 @@ const FAQSection = () => {
 
 const App = () => {
   const [view, setView] = useState<ViewState>('landing');
+  const [session, setSession] = useState(null);
 
-  // Check for session (mock)
   useEffect(() => {
-    // Auto login check or similar could go here
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) setView('app');
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        setView('app');
+      } else {
+        setView('landing');
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   if (view === 'auth') {
-    return <AuthScreen onLogin={() => setView('app')} />;
+    return <AuthScreen onLoginSuccess={() => setView('app')} />;
   }
 
   if (view === 'app') {

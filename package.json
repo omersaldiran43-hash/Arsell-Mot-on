@@ -1,5 +1,5 @@
 {
-  "name": "copy-of-arsell-motion-ai",
+  "name": "arsell-projesi-final",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,7 +12,8 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "lucide-react": "^0.564.0",
-    "framer-motion": "^12.34.0"
+    "framer-motion": "^12.34.0",
+    "@supabase/supabase-js": "^2.96.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

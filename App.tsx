@@ -321,6 +321,10 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   const [credits, setCredits] = useState<number | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [packages, setPackages] = useState<CreditPackage[]>([]);
+  
+  // Settings Form State
+  const [settingsForm, setSettingsForm] = useState({ first_name: '', last_name: '' });
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
   // Layout Refs
   const [uploadedVideo, setUploadedVideo] = useState<string | null>(null);
@@ -355,6 +359,13 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
       
       setProfile(profileData);
       setCredits(balanceData?.credits || 0);
+      
+      if (profileData) {
+        setSettingsForm({
+          first_name: profileData.first_name || '',
+          last_name: profileData.last_name || ''
+        });
+      }
     }
   };
 
@@ -443,6 +454,28 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
       } catch (e:any) {
         alert("Yükleme hatası: " + e.message);
       }
+    }
+  };
+  
+  const handleSaveSettings = async () => {
+    setIsUpdatingProfile(true);
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if(!user) return;
+
+        const { error } = await supabase.from('profiles').update({
+            first_name: settingsForm.first_name,
+            last_name: settingsForm.last_name
+        }).eq('id', user.id);
+
+        if(error) throw error;
+        
+        alert("Profil bilgileri başarıyla güncellendi.");
+        await fetchUserData(); // Profil verilerini yenile
+    } catch (error: any) {
+        alert("Profil güncellenirken hata oluştu: " + error.message);
+    } finally {
+        setIsUpdatingProfile(false);
     }
   };
 
@@ -759,7 +792,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                            {profile?.first_name?.[0] || 'U'}
                         </div>
                         <div>
-                           <button className="text-[#ccff00] text-sm hover:underline font-bold">Profil Fotoğrafını Değiştir</button>
+                           <button className="text-[#ccff00] text-sm hover:underline font-bold" onClick={() => alert("Yakında eklenecek!")}>Profil Fotoğrafını Değiştir</button>
                            <p className="text-gray-500 text-xs mt-1">JPG, GIF veya PNG. Max 2MB.</p>
                         </div>
                      </div>
@@ -767,11 +800,21 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                            <label className="block text-xs font-bold text-gray-500 mb-2">AD</label>
-                           <input type="text" defaultValue={profile?.first_name || ''} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ccff00] focus:outline-none" />
+                           <input 
+                                type="text" 
+                                value={settingsForm.first_name} 
+                                onChange={(e) => setSettingsForm({...settingsForm, first_name: e.target.value})} 
+                                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ccff00] focus:outline-none" 
+                           />
                         </div>
                         <div>
                            <label className="block text-xs font-bold text-gray-500 mb-2">SOYAD</label>
-                           <input type="text" defaultValue={profile?.last_name || ''} className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ccff00] focus:outline-none" />
+                           <input 
+                                type="text" 
+                                value={settingsForm.last_name} 
+                                onChange={(e) => setSettingsForm({...settingsForm, last_name: e.target.value})} 
+                                className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#ccff00] focus:outline-none" 
+                           />
                         </div>
                         <div className="md:col-span-2">
                            <label className="block text-xs font-bold text-gray-500 mb-2">E-POSTA</label>
@@ -783,8 +826,13 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                      </div>
 
                      <div className="flex justify-end pt-4">
-                        <button className="bg-white text-black font-bold px-6 py-3 rounded-xl hover:bg-[#ccff00] transition-colors flex items-center gap-2">
-                           <Save size={16} /> Değişiklikleri Kaydet
+                        <button 
+                            onClick={handleSaveSettings}
+                            disabled={isUpdatingProfile}
+                            className="bg-white text-black font-bold px-6 py-3 rounded-xl hover:bg-[#ccff00] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                           {isUpdatingProfile ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} 
+                           {isUpdatingProfile ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
                         </button>
                      </div>
                   </div>

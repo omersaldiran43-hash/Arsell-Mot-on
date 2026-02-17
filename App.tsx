@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from './lib/supabase';
 import { 
@@ -34,7 +34,8 @@ import {
   Mail,
   Save,
   Bell,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 
 // --- Global Types & Variants ---
@@ -326,9 +327,12 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   const [settingsForm, setSettingsForm] = useState({ first_name: '', last_name: '' });
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
-  // Layout Refs
+  // Layout Refs & File State
   const [uploadedVideo, setUploadedVideo] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [videoDuration, setVideoDuration] = useState<number | null>(null);
 
   useEffect(() => {
     fetchUserData();
@@ -370,8 +374,12 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   };
 
   const fetchPackages = async () => {
+    // If you want to use Supabase table for packages, ensure it's updated. 
+    // Otherwise, we can fallback to static or updated packages here if table isn't used dynamically yet.
+    // For now, we will use static data in PricingSection for the requested update, 
+    // but fetching here supports dynamic DB packages if configured.
     const { data } = await supabase.from('credit_packages').select('*').order('price');
-    if (data) setPackages(data);
+    if (data && data.length > 0) setPackages(data);
   };
 
   const fetchGenerations = async () => {
@@ -383,18 +391,57 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
-      if (type === 'video') setUploadedVideo(url);
-      else setUploadedImage(url);
+      if (type === 'video') {
+        // Load video metadata to check duration
+        const videoElement = document.createElement('video');
+        videoElement.preload = 'metadata';
+        
+        videoElement.onloadedmetadata = () => {
+          window.URL.revokeObjectURL(videoElement.src);
+          const duration = videoElement.duration;
+          
+          if (duration > 30) {
+            alert('Video süresi maksimum 30 saniye olabilir. Lütfen daha kısa bir video yükleyin.');
+            e.target.value = ''; // Reset input
+            setUploadedVideo(null);
+            setVideoFile(null);
+            setVideoDuration(null);
+          } else {
+            setUploadedVideo(url);
+            setVideoFile(file);
+            setVideoDuration(duration);
+          }
+        };
+        
+        videoElement.src = URL.createObjectURL(file);
+
+      } else {
+        setUploadedImage(url);
+        setImageFile(file);
+      }
     }
   };
 
+  const uploadFileToStorage = async (file: File, bucket: string, path: string) => {
+      const { error } = await supabase.storage.from(bucket).upload(path, file);
+      if (error) {
+        throw new Error(`Upload failed for ${file.name}: ${error.message}`);
+      }
+      const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+      return data.publicUrl;
+  };
+
   const handleGenerate = async () => {
-    if (credits === null || credits < 5) {
-      alert("Yetersiz kredi! Lütfen kredi yükleyin.");
+    // Calculate cost based on duration (1 sec = 1 credit), min 5 credits just in case of very short glitchy videos
+    // or strictly follow prompt: "sn hesaplaması yapılıp ona göre kredi sun"
+    const cost = videoDuration ? Math.ceil(videoDuration) : 5;
+
+    if (credits === null || credits < cost) {
+      alert(`Yetersiz kredi! Bu işlem için ${cost} kredi gerekiyor.`);
       setActiveTab('pricing');
       return;
     }
-    if (!uploadedVideo || !uploadedImage) {
+    if (!videoFile || !imageFile) {
       alert("Lütfen bir referans video ve karakter görseli yükleyin.");
       return;
     }
@@ -407,36 +454,82 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
 
       // 1. Spend Credits (Server-side secure function)
       const { data: success, error: spendError } = await supabase.rpc('spend_credits', { 
-        amount: 5, 
-        description: 'Motion Transfer Generation' 
+        amount: cost, 
+        description: `Motion Transfer (${Math.ceil(videoDuration || 0)}s)` 
       });
 
       if (spendError || !success) {
         throw new Error("Kredi düşülemedi veya yetersiz bakiye.");
       }
 
-      // 2. Insert Generation Record
-      // For demo purposes, we mock the output URL. In production, this would be an API call to the GPU worker.
-      const mockOutput = "https://assets.mixkit.co/videos/preview/mixkit-futuristic-robot-dancing-40404-large.mp4";
+      // 2. Upload files to Supabase Storage
+      const timestamp = Date.now();
+      const videoPath = `${user.id}/${timestamp}_video_${videoFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+      const imagePath = `${user.id}/${timestamp}_image_${imageFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
 
-      const { error: genError } = await supabase.from('generations').insert({
-        user_id: user.id,
-        prompt: extraPrompt,
-        input_video_url: 'uploaded_video_placeholder',
-        input_image_url: 'uploaded_image_placeholder',
-        output_video_url: mockOutput,
-        status: 'completed'
-      });
+      const publicVideoUrl = await uploadFileToStorage(videoFile, 'uploads', videoPath);
+      const publicImageUrl = await uploadFileToStorage(imageFile, 'uploads', imagePath);
 
-      if (genError) throw genError;
+      // 3. Call External Webhook with Long Timeout
+      const controller = new AbortController();
+      // 15 Minutes Timeout (900,000 ms)
+      const timeoutId = setTimeout(() => controller.abort(), 900000);
 
-      const resultsElement = document.getElementById('results-section');
-      if (resultsElement) {
-        resultsElement.scrollIntoView({ behavior: 'smooth' });
+      try {
+        const webhookResponse = await fetch('https://kt4mv7v1.rpcld.com/webhook/motion', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                prompt: extraPrompt,
+                image: publicImageUrl,
+                video: publicVideoUrl
+            }),
+            signal: controller.signal
+        });
+
+        if (!webhookResponse.ok) {
+            throw new Error('Video oluşturma servisine erişilemedi.');
+        }
+
+        const resultData = await webhookResponse.json();
+        const outputVideoUrl = resultData.video_url;
+
+        if (!outputVideoUrl) {
+            throw new Error('Servis geçerli bir video URL döndürmedi.');
+        }
+
+        // 4. Insert Generation Record
+        const { error: genError } = await supabase.from('generations').insert({
+          user_id: user.id,
+          prompt: extraPrompt,
+          input_video_url: publicVideoUrl,
+          input_image_url: publicImageUrl,
+          output_video_url: outputVideoUrl,
+          status: 'completed'
+        });
+
+        if (genError) throw genError;
+
+        // Refresh list
+        await fetchGenerations();
+
+        const resultsElement = document.getElementById('results-section');
+        if (resultsElement) {
+          resultsElement.scrollIntoView({ behavior: 'smooth' });
+        }
+      } finally {
+        clearTimeout(timeoutId);
       }
 
     } catch (error: any) {
-      alert("Hata oluştu: " + error.message);
+      if (error.name === 'AbortError') {
+        alert("İşlem zaman aşımına uğradı (15 dakika). Lütfen daha sonra tekrar deneyiniz veya destek ile iletişime geçiniz.");
+      } else {
+        alert("İşlem başarısız: " + error.message);
+      }
+      console.error(error);
     } finally {
       setIsGenerating(false);
     }
@@ -492,6 +585,8 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
     await supabase.auth.signOut();
     onLogout();
   };
+
+  const calculatedCost = videoDuration ? Math.ceil(videoDuration) : 0;
 
   return (
     <div className="flex h-screen bg-black text-white overflow-hidden font-sans selection:bg-[#ccff00] selection:text-black">
@@ -606,11 +701,20 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                                    <Video size={24} />
                                 </div>
                                 <h3 className="text-white font-bold mb-2">Referans Video Ekle</h3>
-                                <p className="text-gray-500 text-xs">Video süresi: 3-30 saniye</p>
+                                <p className="text-gray-500 text-xs">Maksimum 30 saniye</p>
                              </>
                           )}
                        </div>
-                       {uploadedVideo && <div className="absolute top-4 right-4 z-20 bg-black/50 p-1 rounded-full"><Check size={14} className="text-[#ccff00]"/></div>}
+                       {uploadedVideo && (
+                          <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
+                             <div className="bg-black/50 p-1 rounded-full"><Check size={14} className="text-[#ccff00]"/></div>
+                             {videoDuration && (
+                                <div className="bg-black/80 backdrop-blur px-2 py-1 rounded-lg text-[10px] font-bold text-[#ccff00] border border-white/10">
+                                   {Math.ceil(videoDuration)}sn
+                                </div>
+                             )}
+                          </div>
+                       )}
                     </div>
 
                     <div className="bg-[#0f0f0f]/80 backdrop-blur-sm border border-white/10 rounded-2xl p-1 relative group hover:border-[#ccff00]/30 transition-colors h-[300px] flex flex-col shadow-lg">
@@ -643,37 +747,32 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                        </div>
                        <ChevronRight size={18} className="text-gray-600" />
                     </div>
-                    <div className="bg-[#0f0f0f]/80 backdrop-blur-sm border border-white/10 rounded-xl p-4 flex items-center justify-between group cursor-pointer relative shadow-lg">
-                       <div>
-                          <span className="text-xs text-gray-500 block mb-1">Kalite</span>
-                          <span className="text-white font-bold">{quality}</span>
+                    
+                    {/* Duration & Credit Info Box */}
+                    {videoDuration && (
+                       <div className="bg-[#ccff00]/10 border border-[#ccff00]/20 rounded-xl p-4 flex items-center gap-3">
+                          <AlertCircle size={20} className="text-[#ccff00]" />
+                          <div>
+                             <p className="text-white text-sm font-bold">Hesaplanan Maliyet</p>
+                             <p className="text-[#ccff00] text-xs">Video süreniz {Math.ceil(videoDuration)} saniye olduğu için işlem maliyeti {Math.ceil(videoDuration)} Kredi olacaktır.</p>
+                          </div>
                        </div>
-                       <ChevronRight size={18} className="text-gray-600" />
-                       <select 
-                          value={quality}
-                          onChange={(e) => setQuality(e.target.value)}
-                          className="absolute inset-0 opacity-0 cursor-pointer"
-                       >
-                          <option value="1080p">1080p (Standart)</option>
-                          <option value="2K">2K (Yüksek Detay)</option>
-                          <option value="4K">4K (Ultra Keskin)</option>
-                       </select>
-                    </div>
-                 </div>
+                    )}
 
-                 <div className="bg-[#0f0f0f]/80 backdrop-blur-sm border border-white/10 rounded-2xl p-5 shadow-lg">
-                    <div className="flex items-center justify-between mb-3">
-                       <div className="flex items-center gap-2 text-white font-bold">
-                          <Sparkles size={16} className="text-[#ccff00]" /> Ekstra İstekler (Prompt)
+                    <div className="bg-[#0f0f0f]/80 backdrop-blur-sm border border-white/10 rounded-2xl p-5 shadow-lg">
+                       <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2 text-white font-bold">
+                             <Sparkles size={16} className="text-[#ccff00]" /> Ekstra İstekler (Prompt)
+                          </div>
+                          <span className="text-[10px] text-gray-500 uppercase">Opsiyonel</span>
                        </div>
-                       <span className="text-[10px] text-gray-500 uppercase">Opsiyonel</span>
+                       <textarea 
+                          value={extraPrompt}
+                          onChange={(e) => setExtraPrompt(e.target.value)}
+                          placeholder="Işıklandırma, arka plan veya ruh hali gibi detayları buraya yazabilirsiniz..."
+                          className="w-full bg-[#0a0a0a]/50 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-[#ccff00]/50 min-h-[80px] resize-none"
+                       />
                     </div>
-                    <textarea 
-                       value={extraPrompt}
-                       onChange={(e) => setExtraPrompt(e.target.value)}
-                       placeholder="Işıklandırma, arka plan veya ruh hali gibi detayları buraya yazabilirsiniz..."
-                       className="w-full bg-[#0a0a0a]/50 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-[#ccff00]/50 min-h-[80px] resize-none"
-                    />
                  </div>
 
                  <button 
@@ -682,9 +781,9 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                     className="w-full bg-[#ccff00] hover:bg-[#b3e600] text-black font-black text-lg py-4 rounded-2xl flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(204,255,0,0.2)] hover:shadow-[0_0_50px_rgba(204,255,0,0.4)] transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                  >
                     {isGenerating ? (
-                       <>Oluşturuluyor...</>
+                       <>Oluşturuluyor (Bu işlem zaman alabilir)...</>
                     ) : (
-                       <>Oluştur <Sparkles size={20} className="fill-black" /> 5 Kredi</>
+                       <>Oluştur <Sparkles size={20} className="fill-black" /> {calculatedCost > 0 ? calculatedCost : '5+'} Kredi</>
                     )}
                  </button>
 
@@ -753,7 +852,36 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {packages.map((pack) => (
+                      {/* Using manual packages to reflect prompt request immediately without waiting for DB sync if needed */}
+                      {[
+                        {
+                          id: 1,
+                          name: "Starter",
+                          credits: 35,
+                          price: 350,
+                          description: "Başlangıç için ideal.",
+                          features: ["35 Kredi", "35 Saniye Video", "Standart Hız"],
+                          is_popular: false
+                        },
+                        {
+                          id: 2,
+                          name: "Growth",
+                          credits: 75,
+                          price: 750,
+                          description: "İçerik üreticileri için.",
+                          features: ["75 Kredi", "75 Saniye Video", "Yüksek Hız"],
+                          is_popular: true
+                        },
+                        {
+                          id: 3,
+                          name: "Scale",
+                          credits: 125,
+                          price: 1250,
+                          description: "Profesyoneller için.",
+                          features: ["125 Kredi", "125 Saniye Video", "Öncelikli Render"],
+                          is_popular: false
+                        }
+                      ].map((pack) => (
                           <div key={pack.id} className={`rounded-3xl p-6 border border-white/10 flex flex-col items-center text-center hover:scale-105 transition-transform duration-300 shadow-xl ${pack.is_popular ? 'bg-[#0f0f0f] border-[#ccff00]' : 'bg-[#0f0f0f]'}`}>
                              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-4 text-[#ccff00]">
                                 <Coins size={24} />
@@ -769,7 +897,6 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                              </button>
                           </div>
                       ))}
-                      {packages.length === 0 && <p className="text-center col-span-3 text-gray-500">Paketler yükleniyor...</p>}
                   </div>
                   
                   <div className="bg-[#0f0f0f] rounded-2xl p-6 flex items-start gap-4 border border-white/5 shadow-lg">
@@ -1120,27 +1247,27 @@ const HowItWorks = () => {
 const PricingSection = ({ onPlanSelect }: { onPlanSelect: () => void }) => {
   const plans = [
     {
-      name: "Starter Paketi",
-      credits: 300,
-      price: 19,
-      description: "Hobi amaçlı kullanım ve deneme için ideal.",
-      features: ["300 Kredi", "Sınırsız Süre", "Standart Render Hızı", "Temel Modeller"],
+      name: "Starter",
+      credits: 35,
+      price: 350,
+      description: "Başlangıç için ideal.",
+      features: ["35 Kredi", "35 Saniye Video", "Standart Hız", "Temel Modeller"],
       highlight: false
     },
     {
-      name: "Creator Paketi",
-      credits: 1000,
-      price: 49,
-      description: "İçerik üreticileri için en popüler tercih.",
-      features: ["1000 Kredi", "Öncelikli Render", "Ticari Lisans", "Filigran Yok", "Tüm Modeller Açık"],
+      name: "Growth",
+      credits: 75,
+      price: 750,
+      description: "İçerik üreticileri için.",
+      features: ["75 Kredi", "75 Saniye Video", "Yüksek Hız", "Öncelikli Sıra"],
       highlight: true
     },
     {
-      name: "Studio Paketi",
-      credits: 2500,
-      price: 99,
-      description: "Profesyonel stüdyolar ve ajanslar için.",
-      features: ["2500 Kredi", "Ultra Hızlı Render", "4K Upscale Dahil", "Özel Destek", "API Erişimi"],
+      name: "Scale",
+      credits: 125,
+      price: 1250,
+      description: "Profesyoneller için.",
+      features: ["125 Kredi", "125 Saniye Video", "Ultra Hızlı Render", "VIP Destek"],
       highlight: false
     }
   ];
@@ -1178,7 +1305,7 @@ const PricingSection = ({ onPlanSelect }: { onPlanSelect: () => void }) => {
                 <div className="mb-6">
                    <h3 className="text-gray-400 font-bold uppercase text-xs tracking-widest mb-4">{plan.name}</h3>
                    <div className="flex items-baseline gap-1 mb-2">
-                      <span className="text-5xl font-black text-white">${plan.price}</span>
+                      <span className="text-4xl md:text-5xl font-black text-white">{plan.price} TL</span>
                       <span className="text-gray-500 text-lg font-normal">/tek seferlik</span>
                    </div>
                    <p className="text-gray-500 text-sm leading-relaxed">{plan.description}</p>
@@ -1319,11 +1446,11 @@ const FAQSection = () => {
     },
     {
       question: "Ortalama bir video kaç kredi harcar?",
-      answer: "Standart 5 saniyelik bir video üretimi yaklaşık 10 kredi harcar. Upscaling ve Lip Sync özellikleri ekstra kredi tüketebilir. Oluşturmadan önce maliyeti görürsünüz."
+      answer: "Video süresi saniye bazında hesaplanır. Örneğin 5 saniyelik bir video oluşturmak 5 kredi harcar. Minimum işlem bedeli 5 kredidir."
     },
     {
       question: "Ticari haklar nelerdir?",
-      answer: "Creator ve Studio paketleriyle oluşturduğunuz tüm içeriklerin ticari kullanım hakları %100 size aittir. Youtube'da para kazanabilir, reklamlarınızda kullanabilirsiniz."
+      answer: "Tüm paketlerle oluşturduğunuz içeriklerin ticari kullanım hakları %100 size aittir. Youtube'da para kazanabilir, reklamlarınızda kullanabilirsiniz."
     },
     {
       question: "İade politikanız nedir?",

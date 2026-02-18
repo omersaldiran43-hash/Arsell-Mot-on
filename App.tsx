@@ -35,14 +35,122 @@ import {
   Save,
   Bell,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  FileText,
+  Shield,
+  Layers,
+  Trophy,
+  Cookie
 } from 'lucide-react';
 
 // --- Global Types & Variants ---
 
 type ViewState = 'landing' | 'auth' | 'app';
+type PolicyType = 'privacy' | 'terms' | 'creative-challenge' | 'cookie-notice' | 'cookie-settings' | null;
 
 const LOGO_URL = "https://i.hizliresim.com/1mzb21q.png";
+
+// --- Policies Content ---
+
+const PRIVACY_TEXT = `
+**GİZLİLİK POLİTİKASI (PRIVACY)**
+
+**1. Veri Toplama ve Kullanım**
+Arsell Motion AI ("Platform") olarak, hizmetlerimizi sunmak amacıyla adınız, e-posta adresiniz ve yüklediğiniz medya dosyaları gibi temel bilgileri toplarız. Yüklediğiniz videolar ve görseller, yalnızca talep ettiğiniz işlemi gerçekleştirmek (video üretimi) amacıyla işlenir ve geçici sunucularımızda barındırılır.
+
+**2. Medya Güvenliği**
+Yüklediğiniz referans videolar ve karakter görselleri, işlem tamamlandıktan sonra belirli bir süre (varsayılan 24-48 saat) sistemde tutulur ve ardından otomatik olarak güvenli bir şekilde silinir veya arşivlenir. İçerikleriniz asla üçüncü taraflarla reklam amaçlı paylaşılmaz veya izniniz olmadan umuma açık yayınlanmaz.
+
+**3. Çerezler ve İzleme**
+Kullanıcı deneyimini iyileştirmek ve oturum güvenliğini sağlamak amacıyla çerezler (cookies) kullanmaktayız. Tarayıcı ayarlarınızdan çerezleri yönetebilirsiniz.
+
+**4. Üçüncü Taraf Hizmetler**
+Ödeme işlemleri güvenli ödeme altyapısı sağlayıcıları (örn. PayTR, Stripe vb.) aracılığıyla gerçekleştirilir. Kredi kartı bilgileriniz sunucularımızda saklanmaz.
+
+**5. Değişiklikler**
+Bu politika zaman zaman güncellenebilir. Önemli değişiklikler e-posta veya site içi bildirim yoluyla duyurulacaktır.
+`;
+
+const TERMS_TEXT = `
+**KULLANIM ŞARTLARI (TERMS)**
+
+**1. Hizmetin Tanımı**
+Arsell Motion AI, yapay zeka tabanlı video üretim ve düzenleme araçları sunan bir platformdur. Kullanıcılar kredi satın alarak video işleme hizmetlerinden yararlanabilirler.
+
+**2. Kullanıcı Sorumlulukları**
+Platformu yasa dışı, zararlı, tehditkar, müstehcen veya telif haklarını ihlal eden içerikler üretmek için kullanamazsınız. Yüklediğiniz tüm içeriklerin yasal sorumluluğu size aittir. Deepfake veya yanıltıcı içerik üretimi tespiti halinde hesabınız askıya alınabilir.
+
+**3. Fikri Mülkiyet**
+Platform üzerinde oluşturduğunuz çıktıların (output) ticari kullanım hakları, aksi belirtilmedikçe size aittir. Ancak, Arsell Motion AI altyapısının, yazılımının ve markasının tüm hakları saklıdır.
+
+**4. Krediler ve Ödemeler**
+Satın alınan krediler dijital ürün niteliğinde olup, kullanıldıktan sonra iade edilemez. Kullanılmamış krediler için yasal cayma süresi (14 gün) geçerlidir.
+
+**5. Hizmet Sürekliliği**
+Arsell Motion AI, bakım çalışmaları veya teknik zorunluluklar nedeniyle hizmete geçici olarak ara verme hakkını saklı tutar. Olası veri kayıplarına karşı kullanıcıların kendi yedeklerini almaları önerilir.
+`;
+
+const CREATIVE_CHALLENGE_TEXT = `
+**CREATIVE CHALLENGE (YARATICI YARIŞMA)**
+
+**1. Yarışma Hakkında**
+Her ay düzenlenen Arsell Motion Creative Challenge, topluluğumuzun en yetenekli içerik üreticilerini ödüllendiriyor. Amacımız, yapay zeka destekli video üretiminin sınırlarını zorlamak ve yaratıcılığı teşvik etmektir.
+
+**2. Nasıl Katılırım?**
+- Arsell Motion kullanarak "Ayın Teması"na uygun minimum 5 saniyelik bir video oluşturun.
+- Videonuzu Instagram veya Twitter'da #ArsellChallenge etiketiyle paylaşın.
+- Profilinizden "Yarışmaya Katıl" butonuna tıklayarak gönderi linkini yapıştırın (Bu özellik panelde aktif olduğunda).
+
+**3. Ödüller**
+🥇 **1.lik Ödülü:** 5.000 Kredi + 1 Yıllık 'Scale' Paketi
+🥈 **2.lik Ödülü:** 2.500 Kredi + 'Growth' Paketi
+🥉 **3.lik Ödülü:** 1.000 Kredi
+
+**4. Değerlendirme Kriterleri**
+Jürimiz; yaratıcılık, teknik kalite, hikaye anlatımı ve prompt kullanımındaki ustalığı baz alarak puanlama yapar. Sonuçlar her ayın 1'inde duyurulur.
+
+**5. Katılım Koşulları**
+Yarışmaya katılan eserlerin özgün olması ve Arsell Motion altyapısı ile üretilmiş olması gerekmektedir. Topluluk kurallarına aykırı içerikler diskalifiye edilir.
+`;
+
+const COOKIE_NOTICE_TEXT = `
+**ÇEREZ BİLDİRİMİ (COOKIE NOTICE)**
+
+**1. Çerez Nedir?**
+Çerezler (Cookies), web sitemizi ziyaret ettiğinizde tarayıcınız aracılığıyla bilgisayarınıza, tabletinize veya mobil cihazınıza depolanan küçük metin dosyalarıdır. Bu dosyalar, site tercihlerinizin hatırlanması ve daha iyi bir deneyim sunulması için kullanılır.
+
+**2. Neden Çerez Kullanıyoruz?**
+- **Zorunlu Fonksiyonlar:** Sitemizin düzgün çalışmasını sağlamak (Örn: Oturum açma, sepet işlemleri).
+- **Performans Analizi:** Ziyaretçi sayılarını ve trafik kaynaklarını analiz ederek sitemizin performansını artırmak.
+- **Kişiselleştirme:** Size özel içerik ve öneriler sunmak.
+- **Pazarlama:** İlgi alanlarınıza uygun reklamlar göstermek.
+
+**3. Çerez Türleri**
+- **Oturum Çerezleri:** Tarayıcınızı kapattığınızda otomatik olarak silinir.
+- **Kalıcı Çerezler:** Silinene kadar veya süreleri dolana kadar cihazınızda kalır.
+- **Üçüncü Taraf Çerezleri:** İş ortaklarımız (Google Analytics, Facebook Pixel vb.) tarafından yerleştirilir.
+
+Bu bildirim, çerez kullanımı hakkındaki şeffaflık taahhüdümüzün bir parçasıdır.
+`;
+
+const COOKIE_SETTINGS_TEXT = `
+**ÇEREZ AYARLARI (COOKIE SETTINGS)**
+
+Web sitemizdeki çerez tercihlerinizi aşağıdan yönetebilirsiniz.
+
+**✅ Zorunlu Çerezler (Her Zaman Açık)**
+Bu çerezler, web sitesinin güvenli bir şekilde çalışması, oturum açmanız ve temel fonksiyonları kullanabilmeniz için gereklidir. Bu çerezler sistemlerimizden kapatılamaz.
+
+**🔲 Analitik ve Performans Çerezleri**
+Sitemizi nasıl kullandığınızı analiz etmemize ve performansı artırmamıza yardımcı olur. Hangi sayfaların en çok ve en az ziyaret edildiğini anlamamızı sağlar. 
+*(Şu an: Aktif)*
+
+**🔲 Pazarlama ve Hedefleme Çerezleri**
+Reklam ortaklarımız tarafından ilgi alanlarınıza uygun profiller oluşturmak ve diğer sitelerde alakalı reklamlar göstermek için kullanılabilir. Bu çerezlere izin vermezseniz, daha az hedeflenmiş reklamlarla karşılaşırsınız.
+*(Şu an: Aktif)*
+
+*Not: Tarayıcı ayarlarınızı kullanarak da çerezleri dilediğiniz zaman silebilir veya engelleyebilirsiniz.*
+`;
 
 // --- Shared Components ---
 
@@ -63,6 +171,73 @@ const Button = ({ children, variant = 'primary', className = '', onClick, disabl
     <button onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>
       {children}
     </button>
+  );
+};
+
+const PolicyModal = ({ type, onClose }: { type: PolicyType, onClose: () => void }) => {
+  if (!type) return null;
+  
+  let title = '';
+  let content = '';
+  let Icon = FileText;
+
+  switch (type) {
+    case 'privacy':
+      title = 'Gizlilik Politikası';
+      content = PRIVACY_TEXT;
+      Icon = Shield;
+      break;
+    case 'terms':
+      title = 'Kullanım Şartları';
+      content = TERMS_TEXT;
+      Icon = FileText;
+      break;
+    case 'creative-challenge':
+      title = 'Creative Challenge';
+      content = CREATIVE_CHALLENGE_TEXT;
+      Icon = Trophy;
+      break;
+    case 'cookie-notice':
+      title = 'Çerez Bildirimi';
+      content = COOKIE_NOTICE_TEXT;
+      Icon = Cookie;
+      break;
+    case 'cookie-settings':
+      title = 'Çerez Ayarları';
+      content = COOKIE_SETTINGS_TEXT;
+      Icon = Settings;
+      break;
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-[#0f0f0f] border border-white/10 w-full max-w-2xl max-h-[80vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+      >
+        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-[#111]">
+          <div className="flex items-center gap-3">
+             <div className="p-2 bg-[#ccff00]/10 rounded-lg text-[#ccff00]">
+                <Icon size={20} />
+             </div>
+             <h3 className="text-xl font-bold text-white">{title}</h3>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="p-8 overflow-y-auto custom-scrollbar text-gray-300 leading-relaxed space-y-4 whitespace-pre-wrap">
+           {content}
+        </div>
+        <div className="p-6 border-t border-white/10 bg-[#111] flex justify-end">
+           <button onClick={onClose} className="bg-white text-black font-bold px-6 py-2 rounded-xl hover:bg-gray-200 transition-colors">
+             Anladım
+           </button>
+        </div>
+      </motion.div>
+    </div>
   );
 };
 
@@ -158,7 +333,7 @@ const AuthScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}`, // Production ve Localhost için dinamik URL
+          redirectTo: `${window.location.origin}`, 
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -166,7 +341,6 @@ const AuthScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
         },
       });
       if (error) throw error;
-      // Not: OAuth başarılı olursa sayfa yönlendirileceği için loading'i kapatmaya gerek kalmaz.
     } catch (error: any) {
       setErrorMsg(error.message);
       setLoading(false);
@@ -191,7 +365,6 @@ const AuthScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
         </div>
 
         <div className="bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl space-y-6 relative overflow-hidden group">
-           {/* Card Highlight */}
            <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#ccff00] to-transparent opacity-50"></div>
            
@@ -374,10 +547,6 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   };
 
   const fetchPackages = async () => {
-    // If you want to use Supabase table for packages, ensure it's updated. 
-    // Otherwise, we can fallback to static or updated packages here if table isn't used dynamically yet.
-    // For now, we will use static data in PricingSection for the requested update, 
-    // but fetching here supports dynamic DB packages if configured.
     const { data } = await supabase.from('credit_packages').select('*').order('price');
     if (data && data.length > 0) setPackages(data);
   };
@@ -431,13 +600,22 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
       return data.publicUrl;
   };
 
-  const handleGenerate = async () => {
-    // Calculate cost based on duration (1 sec = 1 credit), min 5 credits just in case of very short glitchy videos
-    // or strictly follow prompt: "sn hesaplaması yapılıp ona göre kredi sun"
-    const cost = videoDuration ? Math.ceil(videoDuration) : 5;
+  // Cost multipliers for resolutions
+  const QUALITY_MULTIPLIERS: Record<string, number> = {
+    "720p": 1,
+    "1080p": 1,
+    "2K": 1.5,
+    "4K": 2
+  };
 
-    if (credits === null || credits < cost) {
-      alert(`Yetersiz kredi! Bu işlem için ${cost} kredi gerekiyor.`);
+  const handleGenerate = async () => {
+    // Calculate cost based on duration (1 sec = 1 credit), min 5 credits
+    const baseCost = videoDuration ? Math.ceil(videoDuration) : 5;
+    const multiplier = QUALITY_MULTIPLIERS[quality] || 1;
+    const totalCost = Math.ceil(baseCost * multiplier);
+
+    if (credits === null || credits < totalCost) {
+      alert(`Yetersiz kredi! Bu işlem (${quality}) için ${totalCost} kredi gerekiyor.`);
       setActiveTab('pricing');
       return;
     }
@@ -454,8 +632,8 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
 
       // 1. Spend Credits (Server-side secure function)
       const { data: success, error: spendError } = await supabase.rpc('spend_credits', { 
-        amount: cost, 
-        description: `Motion Transfer (${Math.ceil(videoDuration || 0)}s)` 
+        amount: totalCost, 
+        description: `Motion Transfer ${quality} (${Math.ceil(videoDuration || 0)}s)` 
       });
 
       if (spendError || !success) {
@@ -470,9 +648,8 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
       const publicVideoUrl = await uploadFileToStorage(videoFile, 'uploads', videoPath);
       const publicImageUrl = await uploadFileToStorage(imageFile, 'uploads', imagePath);
 
-      // 3. Call External Webhook with Long Timeout
+      // 3. Call External Webhook
       const controller = new AbortController();
-      // 15 Minutes Timeout (900,000 ms)
       const timeoutId = setTimeout(() => controller.abort(), 900000);
 
       try {
@@ -484,7 +661,8 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
             body: JSON.stringify({
                 prompt: extraPrompt,
                 image: publicImageUrl,
-                video: publicVideoUrl
+                video: publicVideoUrl,
+                quality: quality // Sending quality to webhook if supported
             }),
             signal: controller.signal
         });
@@ -538,7 +716,6 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
   const handleBuyCredits = async (amount: number, description: string) => {
     const confirm = window.confirm(`${amount} kredi satın almak istiyor musunuz?`);
     if(confirm) {
-      // Simulate Payment & Add Credits via DB function
       try {
         const { error } = await supabase.rpc('add_credits', { amount, description: `Satın alma: ${description}` });
         if(error) throw error;
@@ -564,7 +741,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
         if(error) throw error;
         
         alert("Profil bilgileri başarıyla güncellendi.");
-        await fetchUserData(); // Profil verilerini yenile
+        await fetchUserData();
     } catch (error: any) {
         alert("Profil güncellenirken hata oluştu: " + error.message);
     } finally {
@@ -586,7 +763,8 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
     onLogout();
   };
 
-  const calculatedCost = videoDuration ? Math.ceil(videoDuration) : 0;
+  const calculatedBaseCost = videoDuration ? Math.ceil(videoDuration) : 0;
+  const calculatedTotalCost = Math.ceil(calculatedBaseCost * (QUALITY_MULTIPLIERS[quality] || 1));
 
   return (
     <div className="flex h-screen bg-black text-white overflow-hidden font-sans selection:bg-[#ccff00] selection:text-black">
@@ -738,23 +916,48 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
 
                  {/* Settings */}
                  <div className="space-y-3">
-                    <div className="bg-[#0f0f0f]/80 backdrop-blur-sm border border-white/10 rounded-xl p-4 flex items-center justify-between shadow-lg">
-                       <div>
-                          <span className="text-xs text-gray-500 block mb-1">Model</span>
-                          <span className="text-white font-bold flex items-center gap-2">
-                             Arsell Motion 3.0 <Zap size={14} className="text-[#ccff00] fill-current" />
-                          </span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                       <div className="bg-[#0f0f0f]/80 backdrop-blur-sm border border-white/10 rounded-xl p-4 flex items-center justify-between shadow-lg">
+                          <div>
+                             <span className="text-xs text-gray-500 block mb-1">Model</span>
+                             <span className="text-white font-bold flex items-center gap-2">
+                                Arsell Motion 3.0 <Zap size={14} className="text-[#ccff00] fill-current" />
+                             </span>
+                          </div>
                        </div>
-                       <ChevronRight size={18} className="text-gray-600" />
+                       
+                       <div className="bg-[#0f0f0f]/80 backdrop-blur-sm border border-white/10 rounded-xl p-2 flex items-center shadow-lg relative">
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 z-10 pointer-events-none">
+                             <Layers size={18} />
+                          </div>
+                          <select 
+                             value={quality} 
+                             onChange={(e) => setQuality(e.target.value)}
+                             className="w-full bg-transparent text-white font-bold text-sm pl-12 pr-4 py-2 focus:outline-none cursor-pointer appearance-none"
+                          >
+                             <option value="720p" className="bg-[#111] text-gray-300">720p HD (1x Kredi)</option>
+                             <option value="1080p" className="bg-[#111] text-gray-300">1080p FHD (1x Kredi)</option>
+                             <option value="2K" className="bg-[#111] text-[#ccff00] font-bold">2K QHD (1.5x Kredi)</option>
+                             <option value="4K" className="bg-[#111] text-[#ccff00] font-bold">4K UHD (2x Kredi)</option>
+                          </select>
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                             <ChevronDown size={16} />
+                          </div>
+                       </div>
                     </div>
                     
                     {/* Duration & Credit Info Box */}
                     {videoDuration && (
                        <div className="bg-[#ccff00]/10 border border-[#ccff00]/20 rounded-xl p-4 flex items-center gap-3">
                           <AlertCircle size={20} className="text-[#ccff00]" />
-                          <div>
+                          <div className="flex-1">
                              <p className="text-white text-sm font-bold">Hesaplanan Maliyet</p>
-                             <p className="text-[#ccff00] text-xs">Video süreniz {Math.ceil(videoDuration)} saniye olduğu için işlem maliyeti {Math.ceil(videoDuration)} Kredi olacaktır.</p>
+                             <div className="flex items-center justify-between mt-1">
+                                <p className="text-gray-400 text-xs">Video: {Math.ceil(videoDuration)}sn</p>
+                                <p className="text-[#ccff00] text-xs font-bold bg-[#ccff00]/10 px-2 py-0.5 rounded border border-[#ccff00]/20">
+                                   Toplam: {calculatedTotalCost} Kredi
+                                </p>
+                             </div>
                           </div>
                        </div>
                     )}
@@ -783,7 +986,7 @@ const Dashboard = ({ onLogout }: { onLogout: () => void }) => {
                     {isGenerating ? (
                        <>Oluşturuluyor (Bu işlem zaman alabilir)...</>
                     ) : (
-                       <>Oluştur <Sparkles size={20} className="fill-black" /> {calculatedCost > 0 ? calculatedCost : '5+'} Kredi</>
+                       <>Oluştur <Sparkles size={20} className="fill-black" /> {calculatedTotalCost > 0 ? calculatedTotalCost : '5+'} Kredi</>
                     )}
                  </button>
 
@@ -1475,6 +1678,7 @@ const FAQSection = () => {
 const App = () => {
   const [view, setView] = useState<ViewState>('landing');
   const [session, setSession] = useState(null);
+  const [activePolicy, setActivePolicy] = useState<PolicyType>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -1497,7 +1701,14 @@ const App = () => {
   }, []);
 
   if (view === 'auth') {
-    return <AuthScreen onLoginSuccess={() => setView('app')} />;
+    return (
+      <>
+        <AuthScreen onLoginSuccess={() => setView('app')} />
+        <AnimatePresence>
+          {activePolicy && <PolicyModal type={activePolicy} onClose={() => setActivePolicy(null)} />}
+        </AnimatePresence>
+      </>
+    );
   }
 
   if (view === 'app') {
@@ -1571,12 +1782,18 @@ const App = () => {
                 <span className="text-gray-500 text-sm">© 2026 Arsell Motion AI</span>
              </div>
              <div className="flex gap-6 text-sm text-gray-500">
-                <a href="#" className="hover:text-white transition-colors">Gizlilik</a>
-                <a href="#" className="hover:text-white transition-colors">Şartlar</a>
-                <a href="#" className="hover:text-white transition-colors">İletişim</a>
+                <button onClick={() => setActivePolicy('creative-challenge')} className="hover:text-white transition-colors">Creative Challenge</button>
+                <button onClick={() => setActivePolicy('privacy')} className="hover:text-white transition-colors">Privacy</button>
+                <button onClick={() => setActivePolicy('terms')} className="hover:text-white transition-colors">Terms</button>
+                <button onClick={() => setActivePolicy('cookie-notice')} className="hover:text-white transition-colors">Cookie Notice</button>
+                <button onClick={() => setActivePolicy('cookie-settings')} className="hover:text-white transition-colors">Cookie Settings</button>
              </div>
           </div>
        </footer>
+
+       <AnimatePresence>
+         {activePolicy && <PolicyModal type={activePolicy} onClose={() => setActivePolicy(null)} />}
+       </AnimatePresence>
     </div>
   );
 };

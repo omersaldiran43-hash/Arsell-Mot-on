@@ -1568,7 +1568,7 @@ const App = () => {
           <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
              <div className="flex items-center gap-2">
                 <Logo className="h-6" />
-                <span className="text-gray-500 text-sm">© 2024 Arsell Motion AI</span>
+                <span className="text-gray-500 text-sm">© 2026 Arsell Motion AI</span>
              </div>
              <div className="flex gap-6 text-sm text-gray-500">
                 <a href="#" className="hover:text-white transition-colors">Gizlilik</a>
